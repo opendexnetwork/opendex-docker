@@ -92,7 +92,7 @@ func (t *Service) GetStatus(ctx context.Context) (string, error) {
 	info, err := t.GetInfo(ctx)
 	if err != nil {
 		if err, ok := err.(service.ErrExec); ok {
-			if strings.Contains(err.Output, "opendex is locked") {
+			if strings.Contains(err.Output, "opendexd is locked") {
 				nodekey := filepath.Join(t.DataDir, "nodekey.dat")
 				if _, err := os.Stat(nodekey); os.IsNotExist(err) {
 					return "Wallet missing. Create with opendex-cli create/restore.", nil
@@ -100,7 +100,7 @@ func (t *Service) GetStatus(ctx context.Context) (string, error) {
 				return "Wallet locked. Unlock with opendex-cli unlock.", nil
 			} else if strings.Contains(err.Output, "tls cert could not be found at /root/.opendex/tls.cert") {
 				return "Starting...", nil
-			} else if strings.Contains(err.Output, "opendex is starting") {
+			} else if strings.Contains(err.Output, "opendexd is starting") {
 				return "Starting...", nil
 			} else if strings.Contains(err.Output, "is opendexd running?") {
 				// could not connect to opendexd at localhost:18886, is opendexd running?

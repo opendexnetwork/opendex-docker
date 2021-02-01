@@ -21,5 +21,5 @@ WORKDIR /app
 RUN ln -s /app/bin/opendexd /usr/local/bin/opendexd
 RUN ln -s /app/bin/opendex-cli /usr/local/bin/opendex-cli
 ENTRYPOINT ["/entrypoint.sh"]
-VOLUME [ "/root/.opendexd", "/root/backup" ]
+VOLUME [ "/root/.opendex", "/root/backup" ]
 EXPOSE 8887 18887 28887

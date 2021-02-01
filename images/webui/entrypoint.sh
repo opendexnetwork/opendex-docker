@@ -15,10 +15,10 @@ case $NETWORK in
         exit 1
 esac
 
-while ! [ -e /root/.opendexd/tls.cert ]; do
-    echo "Waiting for /root/.opendexd/tls.cert"
+while ! [ -e /root/.opendex/tls.cert ]; do
+    echo "Waiting for /root/.opendex/tls.cert"
     sleep 1
 done
 
-exec bin/server --opendexd.rpchost=ond --opendexd.rpcport=$RPCPORT --opendexd.rpccert=/root/.opendexd/tls.cert \
+exec bin/server --opendexd.rpchost=ond --opendexd.rpcport=$RPCPORT --opendexd.rpccert=/root/.opendex/tls.cert \
 --pairs.weight btc_usdt:4,eth_btc:3,ltc_btc:2,ltc_usdt:1

@@ -53,7 +53,7 @@ func (t *Service) Apply(cfg interface{}) error {
 
 	t.Volumes = append(t.Volumes,
 		fmt.Sprintf("%s:/root/.arby", t.DataDir),
-		fmt.Sprintf("%s:/root/.opendexd", opendexd.DataDir),
+		fmt.Sprintf("%s:/root/.opendex", opendexd.DataDir),
 	)
 
 	params, err := opendexd.GetRpcParams()
@@ -65,7 +65,7 @@ func (t *Service) Apply(cfg interface{}) error {
 
 	t.Environment["NODE_ENV"] = "production"
 	t.Environment["LOG_LEVEL"] = "trace"
-	t.Environment["OPENDEX_CERT_PATH"] = "/root/.opendexd/tls.cert"
+	t.Environment["OPENDEX_CERT_PATH"] = "/root/.opendex/tls.cert"
 	t.Environment["OPENDEX_RPC_HOST"] = opendexdRpc.Host
 	t.Environment["OPENDEX_RPC_PORT"] = fmt.Sprintf("%d", opendexdRpc.Port)
 	t.Environment["BASEASSET"] = c.BaseAsset
