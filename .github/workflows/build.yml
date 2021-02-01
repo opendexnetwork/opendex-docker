@@ -1,0 +1,92 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  job1:
+    name: Detect modified images
+    runs-on: ubuntu-20.04
+    outputs:
+      images: ${{ steps.detect.outputs.images }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get modified images
+        id: detect
+        run: echo ::set-output name=images::$(tools/build --modified-images)
+
+  build_images:
+    needs: job1
+    name: Build Docker image
+    strategy:
+      matrix:
+        platform: [ linux/amd64, linux/arm64 ]
+        image: ${{fromJson(needs.job1.outputs.images)}}
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Show modified images
+        run: echo "${{ needs.job1.outputs.images }}"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - name: Build and push
+        run: tools/build --platform ${{ matrix.platform }} --push ${{ matrix.image }}
+
+  build_launcher:
+    name: Build binary launcher
+    strategy:
+      matrix:
+        go-version: [ 1.15.x ]
+        os: [ linux, darwin, windows ]
+        arch: [ amd64, arm64 ]
+        exclude:
+          - os: windows
+            arch: arm64
+          - os: darwin
+            arch: arm64
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Configure netrc
+        run: |
+          echo "machine github.com login Maith8Ae password ${{ secrets.BOT_TOKEN }}" >> $HOME/.netrc
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make launcher
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            launcher/launcher
+            launcher/launcher.exe
+
+  integration_tests:
+    name: Integration tests
+    needs: [build_images, build_launcher]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Dummy test
+        run: echo "Add more tests here!"

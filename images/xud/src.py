@@ -1,0 +1,21 @@
+from tools.core import src
+
+
+class SourceManager(src.SourceManager):
+    def __init__(self):
+        super().__init__("https://github.com/opendexnetwork/opendexd")
+
+    def get_build_args(self, version):
+        revision = self.get_revision(self.src_dir)
+        return {
+            "GIT_REVISION": revision[:8]
+        }
+
+    def get_ref(self, version):
+        if version == "latest":
+            # change "master" to a another opendexd branch for testing
+            return "master"
+        if version == "1.2.4-1":
+            return "v1.2.4"
+        else:
+            return "v" + version
