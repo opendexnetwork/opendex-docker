@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")" || exit 1
+PYTHON=$(command -v python3)
+
+$PYTHON -m core build "$@"

@@ -1,0 +1,22 @@
+data/
+data.tar.gz
+__pycache__/
+venv/
+*.log
+.vagrant/
+
+# Config of Visual Studio Code
+.vscode/
+
+# Config of PyCharm
+.idea/
+
+# tools logs
+tools/logs
+
+# dotenv
+.env
+
+# project source code
+images/*/.src
+images/*/.cache
