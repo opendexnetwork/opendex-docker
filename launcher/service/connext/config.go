@@ -18,9 +18,9 @@ func (t *Service) GetDefaultConfig() interface{} {
 	if network == types.Mainnet {
 		image = "opendexnetwork/connext:1.3.6-1"
 	} else if network == types.Simnet {
-		image = "connextproject/vector_node:94d3dbcd"
+		image = "connextproject/vector_node:816c5396"
 	} else if network == types.Testnet {
-		image = "connextproject/vector_node:795d14aa"
+		image = "connextproject/vector_node:816c5396"
 	}
 
 	return &Config{
