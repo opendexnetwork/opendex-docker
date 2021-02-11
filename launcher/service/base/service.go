@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	dt "github.com/docker/docker/api/types"
+	docker "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/opendexnetwork/opendex-docker/launcher/log"
 	"github.com/opendexnetwork/opendex-docker/launcher/service"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
 	"github.com/opendexnetwork/opendex-docker/launcher/utils"
-	dt "github.com/docker/docker/api/types"
-	docker "github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -227,8 +227,12 @@ func (t *Service) Apply(cfg interface{}) error {
 	t.Image = c.Image
 	t.Ports = c.ExposePorts
 	t.Disabled = c.Disabled
+	t.Environment = map[string]string{}
 	t.Environment["NETWORK"] = string(t.Context.GetNetwork())
 	t.DataDir = c.Dir
+	t.Ports = []string{}
+	t.Volumes = []string{}
+	t.Command = []string{}
 
 	return nil
 }
