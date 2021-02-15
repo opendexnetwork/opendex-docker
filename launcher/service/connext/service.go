@@ -42,7 +42,7 @@ func (t *Service) IsHealthy(ctx context.Context) bool {
 		}
 		return strings.TrimSpace(string(output)) == "pong"
 	}
-	output, err := t.Exec(ctx, "curl", "-s", "http://localhost:5040/health")
+	output, err := t.Exec(ctx, "curl", "-s", "http://localhost:8000/health")
 	if err != nil {
 		return false
 	}
@@ -145,7 +145,7 @@ func (t *Service) GetRpcParams() (interface{}, error) {
 	var params = make(map[string]interface{})
 	params["type"] = "HTTP"
 	params["host"] = "connext"
-	params["port"] = 5040
+	params["port"] = 8000
 	return params, nil
 }
 
