@@ -50,7 +50,7 @@ EOF
 
 tor -f $TOR_TORRC &
 
-if [[ -z "$LND_HOSTNAME_FILE" ]]
+if [[ ! -z "$LND_HOSTNAME_FILE" ]]; then
     while [[ ! -e "$LND_HOSTNAME_FILE" ]]; do
         echo "[entrypoint] Waiting for opendexd onion address at $LND_HOSTNAME_FILE"
         sleep 1
@@ -66,10 +66,6 @@ echo '[entrypoint] Detecting localnet IP for lndbtc...'
 LNDBTC_IP=$(getent hosts lndbtc || echo '' | awk '{ print $1 }')
 echo "$LNDBTC_IP lndbtc" >> /etc/hosts
 
-echo '[entrypoint] Detecting localnet IP for lndltc...'
-LNDLTC_IP=$(getent hosts lndltc || echo '' | awk '{ print $1 }')
-echo "$LNDLTC_IP lndltc" >> /etc/hosts
-
 echo '[entrypoint] Detecting localnet IP for connext...'
 CONNEXT_IP=$(getent hosts connext || echo '' | awk '{ print $1 }')
 echo "$CONNEXT_IP connext" >> /etc/hosts
@@ -77,16 +73,21 @@ echo "$CONNEXT_IP connext" >> /etc/hosts
 
 LNDBTC_TLS_CERT="${LNDBTC_TLS_CERT:-/root/.lndbtc/tls.cert}"
 while [[ ! -e "$LNDBTC_TLS_CERT" ]]; do
-    echo "[entrypoint] Waiting for ${LNTBTC_TLS_CERT} to be created..."
+    echo "[entrypoint] Waiting for ${LNDBTC_TLS_CERT} to be created..."
     sleep 1
 done
 
-LNDLTC_TLS_CERT="${LNDLTC_TLS_CERT:-/root/.lndltc/tls.cert}"
-while [[ ! -e "$LNDLTC_TLS_CERT" ]]; do
-    echo "[entrypoint] Waiting for ${LNTLTC_TLS_CERT} to be created..."
-    sleep 1
-done
+if [[ -z "$LNDLTC_DISABLE" ]]; then
+    echo '[entrypoint] Detecting localnet IP for lndltc...'
+    LNDLTC_IP=$(getent hosts lndltc || echo '' | awk '{ print $1 }')
+    echo "$LNDLTC_IP lndltc" >> /etc/hosts
 
+    LNDLTC_TLS_CERT="${LNDLTC_TLS_CERT:-/root/.lndltc/tls.cert}"
+    while [[ ! -e "$LNDLTC_TLS_CERT" ]]; do
+        echo "[entrypoint] Waiting for ${LNDLTC_TLS_CERT} to be created..."
+        sleep 1
+    done
+fi
 
 [[ -e $XUD_CONF && $PRESERVE_CONFIG == "true" ]] || {
     cp /app/sample-opendex.conf $XUD_CONF
