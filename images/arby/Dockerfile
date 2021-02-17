@@ -1,10 +1,10 @@
-FROM node:lts-alpine3.12 AS builder
+FROM node:lts-alpine3.13 AS builder
 RUN apk add --no-cache git bash
 WORKDIR /arby
 ADD src.tar.gz .
 RUN npm install
 
-FROM node:lts-alpine3.12
+FROM node:lts-alpine3.13
 RUN apk add --no-cache bash supervisor curl rsync
 RUN mkdir /root/.arby
 VOLUME [ "/root/.arby" ]

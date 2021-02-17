@@ -1,4 +1,4 @@
-FROM node:14-alpine3.12 as builder
+FROM node:14-alpine3.13 as builder
 RUN apk --no-cache add git
 
 WORKDIR /src
@@ -14,7 +14,7 @@ RUN apk --no-cache add bash
 RUN yarn build
 
 
-FROM node:14-alpine3.12
+FROM node:14-alpine3.13
 COPY --from=builder /src/backend/node_modules /app/node_modules
 COPY --from=builder /src/backend/dist /app/dist
 COPY --from=builder /src/backend/bin /app/bin

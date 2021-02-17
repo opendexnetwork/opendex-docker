@@ -1,4 +1,4 @@
-FROM node:lts-alpine3.12 AS builder
+FROM node:lts-alpine3.13 AS builder
 RUN apk add --no-cache git rsync bash musl-dev go python3 make g++
 RUN ln -s /usr/bin/python3 /usr/bin/python
 WORKDIR /opendexd
@@ -13,7 +13,7 @@ RUN npm prune --production
 RUN rm -rf seedutil/go
 RUN strip seedutil/seedutil
 
-FROM node:lts-alpine3.12
+FROM node:lts-alpine3.13
 RUN apk add --no-cache bash tor
 COPY --from=builder /opendexd /app
 COPY entrypoint.sh opendexd-backup.sh /
