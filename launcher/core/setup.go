@@ -38,7 +38,7 @@ func (t *Launcher) Pull(ctx context.Context) error {
 	return utils.Run(ctx, cmd)
 }
 
-func (t *Launcher) Setup(ctx context.Context) error {
+func (t *Launcher) Setup(ctx context.Context, pull bool) error {
 	t.Logger.Debugf("Setup %s (%s)", t.Network, t.NetworkDir)
 
 	// Checking Docker
@@ -73,8 +73,10 @@ func (t *Launcher) Setup(ctx context.Context) error {
 		return fmt.Errorf("generate files: %w", err)
 	}
 
-	if err := t.Pull(ctx); err != nil {
-		return fmt.Errorf("pull: %w", err)
+	if pull {
+		if err := t.Pull(ctx); err != nil {
+			return fmt.Errorf("pull: %w", err)
+		}
 	}
 
 	t.Logger.Debugf("Bring up proxy")
