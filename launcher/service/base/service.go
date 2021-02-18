@@ -33,7 +33,6 @@ type Service struct {
 	DataDir     string
 
 	client        *docker.Client
-	ContainerName string
 
 	Logger *logrus.Entry
 }
@@ -48,7 +47,6 @@ func New(ctx types.Context, name string) (*Service, error) {
 		Name:          name,
 		Context:       ctx,
 		client:        client,
-		ContainerName: fmt.Sprintf("%s_%s_1", ctx.GetNetwork(), name),
 		Logger:        log.NewLogger(fmt.Sprintf("service.%s", name)),
 
 		Hostname:    name,
@@ -66,6 +64,47 @@ func (t *Service) GetName() string {
 	return t.Name
 }
 
+// GetContainerName parses the container name from "docker-compose ps" command
+//
+// Example 1.
+// docker-compose ps opendexd
+//              Name                    Command        State                              Ports
+// ----------------------------------------------------------------------------------------------------------------------
+// 5efa0e55c882_testnet_opendexd_1   /entrypoint.sh   Exit 255   0.0.0.0:55002->18885/tcp, 18887/tcp, 28887/tcp, 8887/tcp
+//
+// Example 2.
+// docker-compose ps opendexd1
+// ERROR: No such service: opendexd1
+//
+// Example 3.
+// docker-compose ps boltz
+// Name   Command   State   Ports
+// ------------------------------
+//
+func (t *Service) GetContainerName(ctx context.Context) string {
+	c := exec.Command("docker-compose", "ps", t.Name)
+	output, _ := utils.Output(ctx, c)
+
+	output = strings.TrimSpace(output)
+	lines := strings.Split(output, "\n")
+
+	n := len(lines)
+
+	if n == 2 {
+		// example 3
+		return ""
+	} else if n == 3 {
+		// example 1
+		return strings.Split(lines[2], " ")[0]
+	} else if n == 1 {
+		// example 2
+		// TODO parse error
+		return ""
+	} else {
+		return ""
+	}
+}
+
 func (t *Service) GetStatus(ctx context.Context) (string, error) {
 	c, err := t.getContainer(ctx)
 	if err != nil {
@@ -75,24 +114,18 @@ func (t *Service) GetStatus(ctx context.Context) (string, error) {
 }
 
 func (t *Service) Start(ctx context.Context) error {
-	if err := t.client.ContainerStart(ctx, t.ContainerName, dt.ContainerStartOptions{}); err != nil {
-		return err
-	}
-	return nil
+	c := exec.Command("docker-compose", "start", t.Name)
+	return utils.Run(ctx, c)
 }
 
 func (t *Service) Stop(ctx context.Context) error {
-	if err := t.client.ContainerStop(ctx, t.ContainerName, nil); err != nil {
-		return err
-	}
-	return nil
+	c := exec.Command("docker-compose", "stop", t.Name)
+	return utils.Run(ctx, c)
 }
 
 func (t *Service) Restart(ctx context.Context) error {
-	if err := t.client.ContainerRestart(ctx, t.ContainerName, nil); err != nil {
-		return err
-	}
-	return nil
+	c := exec.Command("docker-compose", "restart", t.Name)
+	return utils.Run(ctx, c)
 }
 
 func (t *Service) Create(ctx context.Context) error {
@@ -115,7 +148,7 @@ func (t *Service) demuxLogsReader(reader io.Reader) io.Reader {
 }
 
 func (t *Service) GetLogs(ctx context.Context, since string, tail string) ([]string, error) {
-	reader, err := t.client.ContainerLogs(ctx, t.ContainerName, dt.ContainerLogsOptions{
+	reader, err := t.client.ContainerLogs(ctx, t.GetContainerName(ctx), dt.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Since:      since,
@@ -142,7 +175,7 @@ func (t *Service) GetLogs(ctx context.Context, since string, tail string) ([]str
 }
 
 func (t *Service) FollowLogs(ctx context.Context, since string, tail string) (<-chan string, func(), error) {
-	reader, err := t.client.ContainerLogs(ctx, t.ContainerName, dt.ContainerLogsOptions{
+	reader, err := t.client.ContainerLogs(ctx, t.GetContainerName(ctx), dt.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Since:      since,
@@ -174,7 +207,7 @@ func (t *Service) FollowLogs(ctx context.Context, since string, tail string) (<-
 }
 
 func (t *Service) Exec(ctx context.Context, name string, args ...string) (string, error) {
-	createResp, err := t.client.ContainerExecCreate(ctx, t.ContainerName, dt.ExecConfig{
+	createResp, err := t.client.ContainerExecCreate(ctx, t.GetContainerName(ctx), dt.ExecConfig{
 		Cmd:          append([]string{name}, args...),
 		Tty:          false,
 		AttachStdin:  false,
@@ -274,7 +307,7 @@ func (t *Service) GetDefaultConfig() interface{} {
 }
 
 func (t *Service) getContainer(ctx context.Context) (*dt.ContainerJSON, error) {
-	c, err := t.client.ContainerInspect(ctx, t.ContainerName)
+	c, err := t.client.ContainerInspect(ctx, t.GetContainerName(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -302,11 +335,8 @@ func (t *Service) Rescue(ctx context.Context) bool {
 }
 
 func (t *Service) Remove(ctx context.Context) error {
-	return t.client.ContainerRemove(ctx, t.ContainerName, dt.ContainerRemoveOptions{
-		RemoveVolumes: true,
-		RemoveLinks:   false,
-		Force:         true,
-	})
+	c := exec.Command("docker-compose", "rm", "-f", t.Name)
+	return utils.Run(ctx, c)
 }
 
 func (t *Service) RemoveData(ctx context.Context) error {
