@@ -5,36 +5,42 @@ set -o nounset # -u
 set -o pipefail
 set -o monitor # -m
 
-XUD_DIR=$HOME/.opendex
-XUD_CONF=$XUD_DIR/opendex.conf
-TOR_DIR=$XUD_DIR/tor
-TOR_DATA_DIR=$XUD_DIR/tor-data
-LND_HOSTNAME="$TOR_DIR/hostname"
+#XUD_DIR=$HOME/.opendex
+XUD_DIR="${XUD_DIR:-$HOME/.opendex}"
+XUD_CONF="${XUD_CONF:-$XUD_DIR/opendex.conf}"
+TOR_DIR="${TOR_DIR:-$XUD_DIR/tor}"
+TOR_DATA_DIR="${TOR_DATA_DIR:-$XUD_DIR/tor-data}"
+TOR_TORRC="${TORRC:-/etc/tor/torrc}"
 
+LND_HOSTNAME_FILE="$TOR_DIR/hostname"
 
 case $NETWORK in
     mainnet)
-        P2P_PORT=8885
-        RPC_PORT=8886
-        HTTP_PORT=8887
+        DEFAULT_P2P_PORT=8885
+        DEFAULT_RPC_PORT=8886
+        DEFAULT_HTTP_PORT=8887
         ;;
     testnet)
-        P2P_PORT=18885
-        RPC_PORT=18886
-        HTTP_PORT=18887
+        DEFAULT_P2P_PORT=18885
+        DEFAULT_RPC_PORT=18886
+        DEFAULT_HTTP_PORT=18887
         ;;
     simnet)
-        P2P_PORT=28885
-        RPC_PORT=28886
-        HTTP_PORT=28887
+        DEFAULT_P2P_PORT=28885
+        DEFAULT_RPC_PORT=28886
+        DEFAULT_HTTP_PORT=28887
         ;;
     *)
         echo >&2 "Error: Unsupported network: $NETWORK"
         exit 1
 esac
 
+P2P_PORT="${P2P_PORT:-DEFAULT_P2P_PORT}"
+RPC_PORT="${RPC_PORT:-DEFAULT_RPC_PORT}"
+HTTP_PORT="${HTTP_PORT:-DEFAULT_HTTP_PORT}"
 
-[[ -e /etc/tor/torrc ]] || cat <<EOF >/etc/tor/torrc
+
+[[ -e ${TOR_TORRC} ]] || cat <<EOF >/etc/tor/torrc
 DataDirectory $TOR_DATA_DIR
 ExitPolicy reject *:* # no exits allowed
 HiddenServiceDir $TOR_DIR
@@ -42,14 +48,17 @@ HiddenServicePort $P2P_PORT 127.0.0.1:$P2P_PORT
 HiddenServiceVersion 3
 EOF
 
-tor -f /etc/tor/torrc &
+tor -f $TOR_TORRC &
 
-while [[ ! -e $LND_HOSTNAME ]]; do
-    echo "[entrypoint] Waiting for opendexd onion address"
-    sleep 1
-done
+if [[ ! -z "$LND_HOSTNAME_FILE" ]]; then
+    while [[ ! -e "$LND_HOSTNAME_FILE" ]]; do
+        echo "[entrypoint] Waiting for opendexd onion address at $LND_HOSTNAME_FILE"
+        sleep 1
+    done
 
-XUD_ADDRESS=$(cat "$LND_HOSTNAME")
+    XUD_ADDRESS=$(cat "$LND_HOSTNAME_FILE")
+fi
+
 echo "[entrypoint] Onion address for opendexd is $XUD_ADDRESS"
 
 
@@ -57,25 +66,28 @@ echo '[entrypoint] Detecting localnet IP for lndbtc...'
 LNDBTC_IP=$(getent hosts lndbtc || echo '' | awk '{ print $1 }')
 echo "$LNDBTC_IP lndbtc" >> /etc/hosts
 
-echo '[entrypoint] Detecting localnet IP for lndltc...'
-LNDLTC_IP=$(getent hosts lndltc || echo '' | awk '{ print $1 }')
-echo "$LNDLTC_IP lndltc" >> /etc/hosts
-
 echo '[entrypoint] Detecting localnet IP for connext...'
 CONNEXT_IP=$(getent hosts connext || echo '' | awk '{ print $1 }')
 echo "$CONNEXT_IP connext" >> /etc/hosts
 
 
-while [[ ! -e /root/.lndbtc/tls.cert ]]; do
-    echo "[entrypoint] Waiting for /root/.lndbtc/tls.cert to be created..."
+LNDBTC_TLS_CERT="${LNDBTC_TLS_CERT:-/root/.lndbtc/tls.cert}"
+while [[ ! -e "$LNDBTC_TLS_CERT" ]]; do
+    echo "[entrypoint] Waiting for ${LNDBTC_TLS_CERT} to be created..."
     sleep 1
 done
 
-while [[ ! -e /root/.lndltc/tls.cert ]]; do
-    echo "[entrypoint] Waiting for /root/.lndltc/tls.cert to be created..."
-    sleep 1
-done
+if [[ -z "$LNDLTC_DISABLE" ]]; then
+    echo '[entrypoint] Detecting localnet IP for lndltc...'
+    LNDLTC_IP=$(getent hosts lndltc || echo '' | awk '{ print $1 }')
+    echo "$LNDLTC_IP lndltc" >> /etc/hosts
 
+    LNDLTC_TLS_CERT="${LNDLTC_TLS_CERT:-/root/.lndltc/tls.cert}"
+    while [[ ! -e "$LNDLTC_TLS_CERT" ]]; do
+        echo "[entrypoint] Waiting for ${LNDLTC_TLS_CERT} to be created..."
+        sleep 1
+    done
+fi
 
 [[ -e $XUD_CONF && $PRESERVE_CONFIG == "true" ]] || {
     cp /app/sample-opendex.conf $XUD_CONF
@@ -106,7 +118,7 @@ done
 echo "[entrypoint] Launch with opendexd.conf:"
 cat $XUD_CONF
 
-/opendexd-backup.sh &
+XUD_BACKUP_DIR="${XUD_BACKUP_DIR:-/root/backup}" /opendexd-backup.sh &
 
 # use exec to properly respond to SIGINT
 exec opendexd $@
