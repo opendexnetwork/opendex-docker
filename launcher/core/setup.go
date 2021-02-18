@@ -345,7 +345,7 @@ func (t *Launcher) upOpendexd(ctx context.Context) error {
 			return false
 		}
 		if strings.HasPrefix(status, "Wallet locked") {
-			if t.UsingDefaultPassword {
+			if t.UsingDefaultPassword() {
 				if err := t.unlockWallets(ctx, DefaultWalletPassword); err != nil {
 					t.Logger.Errorf("Failed to unlock: %s", err)
 					return false

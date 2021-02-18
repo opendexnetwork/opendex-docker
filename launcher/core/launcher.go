@@ -53,8 +53,6 @@ type Launcher struct {
 	DefaultPasswordMarkFile string
 	ExternalIp              string
 
-	UsingDefaultPassword bool
-
 	rootCmd *cobra.Command
 	client  *http.Client
 
@@ -224,7 +222,6 @@ func NewLauncher() (*Launcher, error) {
 		ConfigFile:              configFile,
 		DefaultPasswordMarkFile: defaultPasswordMarkFile,
 		ExternalIp:              externalIp,
-		UsingDefaultPassword:    true,
 		client: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &config,
