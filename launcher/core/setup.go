@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/proxy"
 	"github.com/opendexnetwork/opendex-docker/launcher/utils"
-	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"net/url"
@@ -365,120 +365,6 @@ func (t *Launcher) upBoltz(ctx context.Context) error {
 	return t.upService(ctx, "boltz", func(status string) bool {
 		return true
 	})
-}
-
-type Request struct {
-	Id     uint64   `json:"id"`
-	Method string   `json:"method"`
-	Params []string `json:"params"`
-}
-
-func (t *Launcher) serve(ctx context.Context, c *websocket.Conn) {
-	for {
-		_, message, err := c.ReadMessage()
-		if err != nil {
-			t.Logger.Errorf("read: %s", err)
-			return
-		}
-		t.Logger.Debugf("recv: %s", message)
-
-		if err := t.handleMessage(ctx, c, message); err != nil {
-			t.Logger.Errorf("handle %s: %s", message, err)
-		}
-	}
-}
-
-func (t *Launcher) handleMessage(ctx context.Context, c *websocket.Conn, msg []byte) error {
-	var req Request
-	if err := json.Unmarshal(msg, &req); err != nil {
-		return err
-	}
-
-	switch req.Method {
-	case "getinfo":
-		return t.hookGetInfo(ctx, c, req.Id)
-	case "backupto":
-		return t.hookBackupTo(ctx, c, req.Id, req.Params[0])
-	}
-
-	return nil
-}
-
-type WalletsInfo struct {
-	DefaultPassword bool `json:"defaultPassword"`
-	MnemonicShown   bool `json:"mnemonicShown"`
-}
-
-type BackupInfo struct {
-	Location        string `json:"location"`
-	DefaultLocation bool   `json:"defaultLocation"`
-}
-
-type Info struct {
-	Wallets WalletsInfo `json:"wallets"`
-	Backup  BackupInfo  `json:"backup"`
-}
-
-func (t *Launcher) GetInfo() Info {
-	defaultPassword := true
-	if _, err := os.Stat(t.DefaultPasswordMarkFile); os.IsNotExist(err) {
-		defaultPassword = false
-	}
-
-	return Info{
-		Wallets: WalletsInfo{
-			DefaultPassword: defaultPassword,
-			MnemonicShown:   !defaultPassword,
-		},
-		Backup: BackupInfo{
-			Location:        t.BackupDir,
-			DefaultLocation: t.BackupDir == t.DefaultBackupDir,
-		},
-	}
-}
-
-func (t *Launcher) BackupTo(ctx context.Context, location string) error {
-	t.BackupDir = location
-	if err := t.Apply(); err != nil {
-		return err
-	}
-	if err := t.Gen(ctx); err != nil {
-		return err
-	}
-	if err := t.upOpendexd(ctx); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *Launcher) hookGetInfo(ctx context.Context, c *websocket.Conn, id uint64) error {
-	var resp = make(map[string]interface{})
-
-	info, err := json.Marshal(t.GetInfo())
-	if err != nil {
-		return err
-	}
-	resp["result"] = string(info)
-	resp["error"] = nil
-	resp["id"] = id
-
-	j, err := json.Marshal(resp)
-	if err != nil {
-		return err
-	}
-
-	t.Logger.Debugf("send: %s", j)
-
-	err = c.WriteMessage(websocket.TextMessage, j)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *Launcher) hookBackupTo(ctx context.Context, c *websocket.Conn, id uint64, location string) error {
-	return t.BackupTo(ctx, location)
 }
 
 func (t *Launcher) attachToProxy(ctx context.Context) error {
