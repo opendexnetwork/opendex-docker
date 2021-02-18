@@ -17,6 +17,6 @@ var genCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := newContext()
 		defer cancel()
-		return launcher.Setup(ctx)
+		return launcher.Gen(ctx)
 	},
 }
