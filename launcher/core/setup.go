@@ -337,7 +337,7 @@ func (t *Launcher) upOpendexd(ctx context.Context) error {
 				t.Logger.Errorf("Failed to create: %s", err)
 				return false
 			}
-			_, err := os.Create(t.DefaultPasswordMarkFile)
+			_, err := os.Create(t.PasswordUnsetMarker)
 			if err != nil {
 				t.Logger.Errorf("Failed to create .default-password: %s", err)
 				return false

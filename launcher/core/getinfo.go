@@ -22,7 +22,7 @@ type Info struct {
 }
 
 func (t *Launcher) UsingDefaultPassword() bool {
-	return utils.FileExists(t.DefaultPasswordMarkFile)
+	return utils.FileExists(t.PasswordUnsetMarker)
 }
 
 func (t *Launcher) GetInfo() Info {
