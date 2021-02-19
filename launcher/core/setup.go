@@ -348,6 +348,10 @@ func (t *Launcher) upOpendexd(ctx context.Context) error {
 			if t.UsingDefaultPassword() {
 				if err := t.unlockWallets(ctx, DefaultWalletPassword); err != nil {
 					t.Logger.Errorf("Failed to unlock: %s", err)
+					if strings.Contains(err.Error(), "password is incorrect") {
+						_ = os.Remove(t.PasswordUnsetMarker)
+						return true // don't try to unlock with wrong password infinitely
+					}
 					return false
 				}
 				return false
