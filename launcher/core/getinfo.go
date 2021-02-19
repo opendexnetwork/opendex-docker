@@ -3,7 +3,7 @@ package core
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"os"
+	"github.com/opendexnetwork/opendex-docker/launcher/utils"
 )
 
 type WalletsInfo struct {
@@ -21,11 +21,12 @@ type Info struct {
 	Backup  BackupInfo  `json:"backup"`
 }
 
+func (t *Launcher) UsingDefaultPassword() bool {
+	return utils.FileExists(t.DefaultPasswordMarkFile)
+}
+
 func (t *Launcher) GetInfo() Info {
-	defaultPassword := true
-	if _, err := os.Stat(t.DefaultPasswordMarkFile); os.IsNotExist(err) {
-		defaultPassword = false
-	}
+	defaultPassword := t.UsingDefaultPassword()
 
 	return Info{
 		Wallets: WalletsInfo{
