@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/iancoleman/strcase"
+	"github.com/mitchellh/go-homedir"
 	"github.com/opendexnetwork/opendex-docker/launcher/log"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/arby"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/bitcoind"
@@ -17,14 +19,11 @@ import (
 	"github.com/opendexnetwork/opendex-docker/launcher/service/proxy"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/webui"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
-	"github.com/iancoleman/strcase"
-	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -143,6 +142,11 @@ func getExternalIp(networkDir string) string {
 	return ""
 }
 
+func checkFolderPermission(networkDir string) error {
+	// TODO implement folder permission checking here
+	return nil
+}
+
 func NewLauncher() (*Launcher, error) {
 	homeDir, err := defaultHomeDir()
 	if err != nil {
@@ -164,14 +168,17 @@ func NewLauncher() (*Launcher, error) {
 		}
 	}
 
-	if runtime.GOOS == "linux" {
-		user := os.Getenv("USER")
-		c := exec.Command("sudo", "chmod", "-R", fmt.Sprintf("%s:%s", user, user), networkDir)
-		_ = c.Run()
-	} else if runtime.GOOS == "darwin" {
-		user := os.Getenv("USER")
-		c := exec.Command("sudo", "chmod", "-R", fmt.Sprintf("%s:staff", user), networkDir)
-		_ = c.Run()
+	//if runtime.GOOS == "linux" {
+	//	user := os.Getenv("USER")
+	//	c := exec.Command("sudo", "chmod", "-R", fmt.Sprintf("%s:%s", user, user), networkDir)
+	//	_ = c.Run()
+	//} else if runtime.GOOS == "darwin" {
+	//	user := os.Getenv("USER")
+	//	c := exec.Command("sudo", "chmod", "-R", fmt.Sprintf("%s:staff", user), networkDir)
+	//	_ = c.Run()
+	//}
+	if err := checkFolderPermission(networkDir); err != nil {
+		return nil, err
 	}
 
 	dataDir := filepath.Join(networkDir, "data")
