@@ -49,8 +49,8 @@ type Launcher struct {
 	DockerComposeFile string
 	ConfigFile        string
 
-	DefaultPasswordMarkFile string
-	ExternalIp              string
+	PasswordUnsetMarker string
+	ExternalIp          string
 
 	rootCmd *cobra.Command
 	client  *http.Client
@@ -199,7 +199,7 @@ func NewLauncher() (*Launcher, error) {
 
 	dockerComposeFile := filepath.Join(networkDir, "docker-compose.yml")
 	configFile := filepath.Join(networkDir, "config.json")
-	defaultPasswordMarkFile := filepath.Join(networkDir, ".default-password")
+	passwordUnsetMarker := filepath.Join(networkDir, ".password-unset")
 	backupDir := getBackupDir(networkDir, dockerComposeFile)
 	defaultBackupDir := getDefaultBackupDir(networkDir)
 
@@ -218,17 +218,17 @@ func NewLauncher() (*Launcher, error) {
 		Logger:   log.NewLogger("launcher"),
 		Services: make(map[string]types.Service),
 
-		HomeDir:                 homeDir,
-		Network:                 network,
-		NetworkDir:              networkDir,
-		DataDir:                 dataDir,
-		LogsDir:                 logsDir,
-		BackupDir:               backupDir,
-		DefaultBackupDir:        defaultBackupDir,
-		DockerComposeFile:       dockerComposeFile,
-		ConfigFile:              configFile,
-		DefaultPasswordMarkFile: defaultPasswordMarkFile,
-		ExternalIp:              externalIp,
+		HomeDir:             homeDir,
+		Network:             network,
+		NetworkDir:          networkDir,
+		DataDir:             dataDir,
+		LogsDir:             logsDir,
+		BackupDir:           backupDir,
+		DefaultBackupDir:    defaultBackupDir,
+		DockerComposeFile:   dockerComposeFile,
+		ConfigFile:          configFile,
+		PasswordUnsetMarker: passwordUnsetMarker,
+		ExternalIp:          externalIp,
 		client: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &config,
