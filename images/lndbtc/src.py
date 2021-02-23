@@ -33,7 +33,7 @@ def ensure_src(version, ref):
 
 def checkout(version):
     if version == "latest":
-        ref = "v0.11.1-beta"
+        ref = "v0.12.1-beta"
     else:
         ref = "v" + version
 

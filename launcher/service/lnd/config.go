@@ -30,7 +30,7 @@ func (t *Service) GetDefaultConfig() interface{} {
 	case Bitcoin:
 		switch network {
 		case types.Mainnet:
-			image = "opendexnetwork/lndbtc:0.11.1-beta"
+			image = "opendexnetwork/lndbtc:0.12.1-beta"
 		case types.Simnet:
 			image = "opendexnetwork/lndbtc-simnet:latest"
 		case types.Testnet:
