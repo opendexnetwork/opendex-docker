@@ -22,6 +22,9 @@ var (
 )
 
 func init() {
+	if err := os.Setenv("DOCKER_API_VERSION", "1.40"); err != nil {
+		panic(err)
+	}
 	var err error
 	launcher, err = core.NewLauncher()
 	if err != nil {
