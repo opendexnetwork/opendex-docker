@@ -19,6 +19,7 @@ import (
 	"github.com/opendexnetwork/opendex-docker/launcher/service/proxy"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/webui"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
+	"github.com/opendexnetwork/opendex-docker/launcher/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -200,6 +201,14 @@ func NewLauncher() (*Launcher, error) {
 	dockerComposeFile := filepath.Join(networkDir, "docker-compose.yml")
 	configFile := filepath.Join(networkDir, "config.json")
 	passwordUnsetMarker := filepath.Join(networkDir, ".password-unset")
+	// migration for legacy .default-password file
+	legacyPasswordUnsetMarker := filepath.Join(networkDir, ".default-password")
+	if utils.FileExists(legacyPasswordUnsetMarker) {
+		if err := os.Rename(legacyPasswordUnsetMarker, passwordUnsetMarker); err != nil {
+			return nil, err
+		}
+	}
+
 	backupDir := getBackupDir(networkDir, dockerComposeFile)
 	defaultBackupDir := getDefaultBackupDir(networkDir)
 
