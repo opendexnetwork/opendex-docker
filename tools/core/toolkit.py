@@ -153,7 +153,7 @@ class Toolkit:
         if platform == "linux/arm64":
             dockerfile = "Dockerfile.aarch64"
 
-        if not os.path.exists(dockerfile):
+        if not os.path.exists(os.path.join(image_dir, dockerfile)):
             dockerfile = "Dockerfile"
 
         build_opts = ["--progress", "plain", "-t", full_tag, "-f", dockerfile]
