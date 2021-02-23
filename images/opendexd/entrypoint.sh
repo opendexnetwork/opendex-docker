@@ -35,9 +35,9 @@ case $NETWORK in
         exit 1
 esac
 
-P2P_PORT="${P2P_PORT:-DEFAULT_P2P_PORT}"
-RPC_PORT="${RPC_PORT:-DEFAULT_RPC_PORT}"
-HTTP_PORT="${HTTP_PORT:-DEFAULT_HTTP_PORT}"
+P2P_PORT="${P2P_PORT:-$DEFAULT_P2P_PORT}"
+RPC_PORT="${RPC_PORT:-$DEFAULT_RPC_PORT}"
+HTTP_PORT="${HTTP_PORT:-$DEFAULT_HTTP_PORT}"
 
 
 [[ -e ${TOR_TORRC} ]] || cat <<EOF >/etc/tor/torrc
@@ -77,7 +77,7 @@ while [[ ! -e "$LNDBTC_TLS_CERT" ]]; do
     sleep 1
 done
 
-if [[ -z "$LNDLTC_DISABLE" ]]; then
+if [[ -z "${LNDLTC_DISABLE:-}" ]]; then
     echo '[entrypoint] Detecting localnet IP for lndltc...'
     LNDLTC_IP=$(getent hosts lndltc || echo '' | awk '{ print $1 }')
     echo "$LNDLTC_IP lndltc" >> /etc/hosts
