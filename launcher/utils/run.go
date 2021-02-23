@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/opendexnetwork/opendex-docker/launcher/log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -12,6 +13,8 @@ import (
 var logger = log.NewLogger("utils")
 
 func Run(ctx context.Context, cmd *exec.Cmd) error {
+	cmd.Env = append(cmd.Env, os.Environ()...)
+
 	var buf bytes.Buffer
 
 	cmd.Stdout = &buf
