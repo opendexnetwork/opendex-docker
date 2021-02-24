@@ -76,6 +76,8 @@ func (t *Service) Apply(cfg interface{}) error {
 		return err
 	}
 
+	t.Environment["DOCKER_API_VERSION"] = "1.40"
+
 	t.Volumes = append(t.Volumes, fmt.Sprintf("%s:/root/.proxy", t.DataDir))
 	t.Volumes = append(t.Volumes, fmt.Sprintf("%s:/root/network", t.Context.GetNetworkDir()))
 	if runtime.GOOS == "windows" {
