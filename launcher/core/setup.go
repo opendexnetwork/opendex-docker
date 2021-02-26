@@ -38,7 +38,7 @@ func (t *Launcher) Pull(ctx context.Context) error {
 	return utils.Run(ctx, cmd)
 }
 
-func (t *Launcher) Setup(ctx context.Context, pull bool) error {
+func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error {
 	t.Logger.Debugf("Setup %s (%s)", t.Network, t.NetworkDir)
 
 	// Checking Docker

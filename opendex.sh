@@ -19,11 +19,19 @@ if ! [ -e "$OPENDEX_DOCKER_HOME" ]; then
 fi
 
 ensure_launcher() {
-  :
+  LAUNCHER=${LAUNCHER:-"/usr/bin/opendex-launcher"}
 }
 
 ensure_network() {
-  :
+  while [ -z "${NETWORK:-}" ]; do
+    echo "1) Testnet"
+    echo "2) Mainnet"
+    read -r -p "Please choose the network: "
+    case $REPLY in
+      1) NETWORK="testnet";;
+      2) NETWORK="mainnet";;
+    esac
+  done
 }
 
 ensure_launcher

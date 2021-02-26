@@ -7,6 +7,7 @@ import (
 
 type SetupOptions struct {
 	NoPull bool
+	Interactive bool
 }
 
 var (
@@ -15,6 +16,7 @@ var (
 
 func init() {
 	setupCmd.PersistentFlags().BoolVar(&setupOpts.NoPull, "nopull", false, "don't pull images")
+	setupCmd.PersistentFlags().BoolVarP(&setupOpts.Interactive, "interactive", "i", false, "interactive setup")
 	rootCmd.AddCommand(setupCmd)
 }
 
@@ -28,6 +30,6 @@ var setupCmd = &cobra.Command{
 		ctx, cancel := newContext()
 		defer cancel()
 		ctx = context.WithValue(ctx, "rescue", false)
-		return launcher.Setup(ctx, !setupOpts.NoPull)
+		return launcher.Setup(ctx, !setupOpts.NoPull, setupOpts.Interactive)
 	},
 }
