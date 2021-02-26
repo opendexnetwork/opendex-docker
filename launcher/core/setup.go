@@ -39,6 +39,9 @@ func (t *Launcher) Pull(ctx context.Context) error {
 }
 
 func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error {
+	if interactive {
+		fmt.Printf("🚀 Launching %s environment\n", t.Network)
+	}
 	t.Logger.Debugf("Setup %s (%s)", t.Network, t.NetworkDir)
 
 	// Checking Docker
@@ -71,6 +74,10 @@ func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error
 
 	if err := t.Gen(ctx); err != nil {
 		return fmt.Errorf("generate files: %w", err)
+	}
+
+	if interactive {
+		fmt.Printf("🌍 Checking for updates ...\n")
 	}
 
 	if pull {
@@ -119,8 +126,13 @@ func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error
 	}
 	_ = f.Close()
 
-	fmt.Println("Attached to proxy. Press Ctrl-C to detach from it.")
-	wg.Wait()
+	if interactive {
+		// enter into console
+		return t.StartConsole(ctx)
+	} else {
+		fmt.Println("Attached to proxy. Press Ctrl-C to detach from it.")
+		wg.Wait()
+	}
 
 	return nil
 }
@@ -325,6 +337,15 @@ func (t *Launcher) upService(ctx context.Context, name string, checkFunc func(st
 }
 
 func (t *Launcher) upOpendexd(ctx context.Context) error {
+	// Do you want to create a new opendexd environment or restore an existing one?
+	//1) Create New
+	//2) Restore Existing
+	//Please choose: 1
+
+	// Please enter a path to a destination where to store a backup of your environment. It includes everything, but NOT your on-chain wallet balance which is secured by your opendexd SEED. The path should be an external drive, like a USB or network drive, which is permanently available on your device since backups are written constantly.
+	//
+	//Enter path to backup location: /media/USB/
+	//Checking... OK.
 	return t.upService(ctx, "opendexd", func(status string) bool {
 		if status == "Ready" {
 			return true

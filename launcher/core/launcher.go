@@ -2,11 +2,13 @@ package core
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/go-homedir"
+	"github.com/opendexnetwork/opendex-docker/launcher/core/console"
 	"github.com/opendexnetwork/opendex-docker/launcher/log"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/arby"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/bitcoind"
@@ -59,6 +61,8 @@ type Launcher struct {
 	rootLogger *logrus.Logger
 
 	LogFile *os.File
+
+	Console *console.Console
 }
 
 func defaultHomeDir() (string, error) {
@@ -244,6 +248,7 @@ func NewLauncher() (*Launcher, error) {
 			},
 		},
 		LogFile: f,
+		Console: console.DefaultConsole,
 	}
 
 	l.Services, l.ServicesOrder, err = initServices(&l, network)
@@ -544,4 +549,8 @@ func (t *Launcher) GetDataDir() string {
 
 func (t *Launcher) Close() {
 	_ = t.LogFile.Close()
+}
+
+func (t *Launcher) StartConsole(ctx context.Context) error {
+	return t.Console.Start()
 }
