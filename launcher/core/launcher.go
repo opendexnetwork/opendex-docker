@@ -53,6 +53,7 @@ type Launcher struct {
 	ConfigFile        string
 
 	PasswordUnsetMarker string
+	BackupUnsetMarker   string
 	ExternalIp          string
 
 	rootCmd *cobra.Command
@@ -212,6 +213,7 @@ func NewLauncher() (*Launcher, error) {
 			return nil, err
 		}
 	}
+	backupUnsetMarker := filepath.Join(networkDir, ".backup-unset")
 
 	backupDir := getBackupDir(networkDir, dockerComposeFile)
 	defaultBackupDir := getDefaultBackupDir(networkDir)
@@ -241,6 +243,7 @@ func NewLauncher() (*Launcher, error) {
 		DockerComposeFile:   dockerComposeFile,
 		ConfigFile:          configFile,
 		PasswordUnsetMarker: passwordUnsetMarker,
+		BackupUnsetMarker:   backupUnsetMarker,
 		ExternalIp:          externalIp,
 		client: &http.Client{
 			Transport: &http.Transport{

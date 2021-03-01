@@ -36,4 +36,5 @@ ensure_network() {
 
 ensure_launcher
 ensure_network
+export NETWORK=$NETWORK
 $LAUNCHER setup --interactive

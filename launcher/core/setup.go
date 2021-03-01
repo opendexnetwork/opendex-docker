@@ -41,6 +41,7 @@ func (t *Launcher) Pull(ctx context.Context) error {
 func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error {
 	if interactive {
 		fmt.Printf("🚀 Launching %s environment\n", t.Network)
+		ctx = context.WithValue(ctx, "interactive", true)
 	}
 	t.Logger.Debugf("Setup %s (%s)", t.Network, t.NetworkDir)
 
@@ -189,7 +190,7 @@ type ApiError struct {
 	Message string `json:"message"`
 }
 
-func (t *Launcher) createWallets(ctx context.Context, password string) error {
+func (t *Launcher) createWalletsByProxy(ctx context.Context, password string) error {
 	apiUrl, err := t.getProxyApiUrl()
 	if err != nil {
 		return fmt.Errorf("get proxy api url: %w", err)
@@ -225,7 +226,25 @@ func (t *Launcher) createWallets(ctx context.Context, password string) error {
 	return nil
 }
 
-func (t *Launcher) unlockWallets(ctx context.Context, password string) error {
+func (t *Launcher) createWalletsByTty(ctx context.Context) error {
+	// docker-compose exec opendexd opendex-cli create
+	c := exec.Command("docker-compose", "exec", "opendexd", "opendex-cli", "create")
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Run()
+}
+
+func (t *Launcher) createWallets(ctx context.Context) error {
+	interactive := ctx.Value("interactive").(bool)
+	if interactive {
+		return t.createWalletsByTty(ctx)
+	} else {
+		return t.createWalletsByProxy(ctx, DefaultWalletPassword)
+	}
+}
+
+func (t *Launcher) unlockWalletsByProxy(ctx context.Context, password string) error {
 	apiUrl, err := t.getProxyApiUrl()
 	if err != nil {
 		return fmt.Errorf("get proxy api url: %w", err)
@@ -259,6 +278,24 @@ func (t *Launcher) unlockWallets(ctx context.Context, password string) error {
 	}
 
 	return nil
+}
+
+func (t *Launcher) unlockWalletsByTty(ctx context.Context) error {
+	// docker-compose exec opendexd opendex-cli create
+	c := exec.Command("docker-compose", "exec", "opendexd", "opendex-cli", "unlock")
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Run()
+}
+
+func (t *Launcher) unlockWallets(ctx context.Context, password string) error {
+	interactive := ctx.Value("interactive").(bool)
+	if interactive {
+		return t.unlockWalletsByTty(ctx)
+	} else {
+		return t.unlockWalletsByProxy(ctx, DefaultWalletPassword)
+	}
 }
 
 func (t *Launcher) upService(ctx context.Context, name string, checkFunc func(string) bool) error {
@@ -338,14 +375,14 @@ func (t *Launcher) upService(ctx context.Context, name string, checkFunc func(st
 
 func (t *Launcher) upOpendexd(ctx context.Context) error {
 	// Do you want to create a new opendexd environment or restore an existing one?
-	//1) Create New
-	//2) Restore Existing
-	//Please choose: 1
+	// 1) Create New
+	// 2) Restore Existing
+	// Please choose: 1
 
 	// Please enter a path to a destination where to store a backup of your environment. It includes everything, but NOT your on-chain wallet balance which is secured by your opendexd SEED. The path should be an external drive, like a USB or network drive, which is permanently available on your device since backups are written constantly.
 	//
-	//Enter path to backup location: /media/USB/
-	//Checking... OK.
+	// Enter path to backup location: /media/USB/
+	// Checking... OK.
 	return t.upService(ctx, "opendexd", func(status string) bool {
 		if status == "Ready" {
 			return true
@@ -354,7 +391,7 @@ func (t *Launcher) upOpendexd(ctx context.Context) error {
 			return true
 		}
 		if strings.HasPrefix(status, "Wallet missing") {
-			if err := t.createWallets(ctx, DefaultWalletPassword); err != nil {
+			if err := t.createWallets(ctx); err != nil {
 				t.Logger.Errorf("Failed to create: %s", err)
 				return false
 			}
@@ -364,8 +401,7 @@ func (t *Launcher) upOpendexd(ctx context.Context) error {
 				return false
 			}
 			return false
-		}
-		if strings.HasPrefix(status, "Wallet locked") {
+		} else if strings.HasPrefix(status, "Wallet locked") {
 			if t.UsingDefaultPassword() {
 				if err := t.unlockWallets(ctx, DefaultWalletPassword); err != nil {
 					t.Logger.Errorf("Failed to unlock: %s", err)
