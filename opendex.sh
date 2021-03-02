@@ -2,11 +2,42 @@
 
 set -e
 
-OPENDEX_LAUNCHER_VERSION="v1.0.0-rc.3"
+LAUNCHER_VERSION="v1.0.0-rc.4"
 
-# ensure the opendex-launcher binary is downloaded
-# select the network
-# run opendex-launcher setup --interactive
+assemble_launcher_download_url() {
+  case $(uname) in
+    Darwin) os="darwin";;
+    Linux) os="linux";;
+    *)
+      echo "Unsupported kernel: $(uname)"
+      exit 1
+      ;;
+  esac
+
+  case $(uname -m) in
+    x86_64) arch="amd64";;
+    aarch64)
+      if [ "$os" = "darwin" ]; then
+        echo "The arm64 macOS has not been supported yet."
+        exit 1
+      fi
+      arch="arm64"
+      ;;
+    *)
+      echo "Unsupported machine: $(name -m)"
+      exit 1
+      ;;
+  esac
+
+  filename="opendex-launcher-${os}-${arch}.zip"
+  unset os
+  unset arch
+
+  LAUNCHER_DOWNLOAD_URL="https://github.com/opendexnetwork/opendex-launcher/releases/download/$LAUNCHER_VERSION/$filename"
+  unset filename
+}
+
+assemble_launcher_download_url
 
 if [ "$(uname)" = "Darwin" ]; then
   OPENDEX_DOCKER_HOME="$HOME/Library/Application\ Support/OpendexDocker"
@@ -18,8 +49,36 @@ if ! [ -e "$OPENDEX_DOCKER_HOME" ]; then
   mkdir "$OPENDEX_DOCKER_HOME"
 fi
 
+DEFAULT_LAUNCHER="$OPENDEX_DOCKER_HOME/opendex-launcher"
+
+install_launcher() {
+  # Install opendex-launcher binary file into $OPENDEX_DOCKER_HOME folder
+  echo "Installing opendex-launcher $LAUNCHER_VERSION ..."
+  echo "$LAUNCHER_DOWNLOAD_URL"
+  curl -sfL "$LAUNCHER_DOWNLOAD_URL" | tar xf - -C "$OPENDEX_DOCKER_HOME"
+  chmod u+x "$DEFAULT_LAUNCHER"
+}
+
 ensure_launcher() {
-  LAUNCHER=${LAUNCHER:-"/usr/bin/opendex-launcher"}
+  LAUNCHER=${LAUNCHER:-"$DEFAULT_LAUNCHER"}
+  install=false
+  if [ -e "$LAUNCHER" ]; then
+    version=$("$LAUNCHER" version)
+    echo "$version"
+    if ! [ "$version" = "$LAUNCHER_VERSION" ]; then
+      install=true
+    fi
+    unset version
+  else
+    if [ "$LAUNCHER" = "$DEFAULT_LAUNCHER" ]; then
+      install=true
+    else
+      echo "opendex-launcher not found: $LAUNCHER"
+      exit 1
+    fi
+  fi
+  $install && install_launcher
+  unset install
 }
 
 ensure_network() {
@@ -37,4 +96,4 @@ ensure_network() {
 ensure_launcher
 ensure_network
 export NETWORK=$NETWORK
-$LAUNCHER setup --interactive
+"$LAUNCHER" setup --interactive
