@@ -9,7 +9,7 @@ import (
 var logger = logrus.NewEntry(logrus.StandardLogger())
 
 var help = `\
-Xucli shortcut commands
+Opendex-cli shortcut commands
   addcurrency <currency>                    add a currency
   <swap_client> [decimal_places]
   [token_address]
