@@ -40,7 +40,7 @@ assemble_launcher_download_url() {
 assemble_launcher_download_url
 
 if [ "$(uname)" = "Darwin" ]; then
-  OPENDEX_DOCKER_HOME="$HOME/Library/Application\ Support/OpendexDocker"
+  OPENDEX_DOCKER_HOME="$HOME/Library/Application Support/OpendexDocker"
 else
   OPENDEX_DOCKER_HOME="$HOME/.opendex-docker"
 fi
