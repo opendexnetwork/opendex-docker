@@ -63,12 +63,9 @@ ensure_launcher() {
   LAUNCHER=${LAUNCHER:-"$DEFAULT_LAUNCHER"}
   install=false
   if [ -e "$LAUNCHER" ]; then
-    version=$("$LAUNCHER" version)
-    echo "$version"
-    if ! [ "$version" = "$LAUNCHER_VERSION" ]; then
+    if ! "$LAUNCHER" version | head -1 | grep -q "$LAUNCHER_VERSION"; then
       install=true
     fi
-    unset version
   else
     if [ "$LAUNCHER" = "$DEFAULT_LAUNCHER" ]; then
       install=true
