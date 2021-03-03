@@ -14,7 +14,7 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:           "launcher",
-		Short:         fmt.Sprintf("XUD environment launcher"),
+		Short:         fmt.Sprintf("OpenDEX environment launcher"),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
