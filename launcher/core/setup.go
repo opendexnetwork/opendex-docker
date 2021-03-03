@@ -87,6 +87,10 @@ func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error
 		}
 	}
 
+	if interactive {
+		fmt.Printf("🏃 Warming up ...\n")
+	}
+
 	t.Logger.Debugf("Bring up proxy")
 	if err := t.upProxy(ctx); err != nil {
 		return fmt.Errorf("up proxy: %w", err)
