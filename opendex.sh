@@ -63,7 +63,7 @@ ensure_launcher() {
   LAUNCHER=${LAUNCHER:-"$DEFAULT_LAUNCHER"}
   install=false
   if [ -e "$LAUNCHER" ]; then
-    if ! "$LAUNCHER" version | head -1 | grep -q "$LAUNCHER_VERSION"; then
+    if ! "$LAUNCHER" version | grep "opendex-launcher" | grep -q "$LAUNCHER_VERSION"; then
       install=true
     fi
   else
