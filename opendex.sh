@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-set -euo pipefail
+set -e
 
 LAUNCHER_VERSION="v1.0.0-rc.4"
 
@@ -86,7 +86,7 @@ ensure_network() {
   while [ -z "${NETWORK:-}" ]; do
     echo "1) Testnet"
     echo "2) Mainnet"
-    read -r -p "Please choose the network: "
+    read -p "Please choose the network: "
     case $REPLY in
       1) NETWORK="testnet";;
       2) NETWORK="mainnet";;
