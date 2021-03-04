@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
+set -euo pipefail
 
 LAUNCHER_VERSION="v1.0.0-rc.4"
 
