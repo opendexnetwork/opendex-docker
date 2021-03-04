@@ -2,7 +2,7 @@
 
 set -e
 
-LAUNCHER_VERSION="v1.0.0-rc.4"
+LAUNCHER_VERSION="v1.0.0-rc.4-7d8968a"
 
 assemble_launcher_download_url() {
   case $(uname) in
