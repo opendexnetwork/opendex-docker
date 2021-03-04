@@ -86,7 +86,7 @@ ensure_network() {
   while [ -z "${NETWORK:-}" ]; do
     echo "1) Testnet"
     echo "2) Mainnet"
-    read -p "Please choose the network: "
+    read -p "Please choose the network: " REPLY
     case $REPLY in
       1) NETWORK="testnet";;
       2) NETWORK="mainnet";;
