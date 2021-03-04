@@ -55,7 +55,11 @@ install_launcher() {
   # Install opendex-launcher binary file into $OPENDEX_DOCKER_HOME folder
   echo "Installing opendex-launcher $LAUNCHER_VERSION ..."
   echo "$LAUNCHER_DOWNLOAD_URL"
-  curl -sfL "$LAUNCHER_DOWNLOAD_URL" | tar xf - -C "$OPENDEX_DOCKER_HOME"
+  zipfile="$OPENDEX_DOCKER_HOME/opendex-launcher.zip"
+  curl -sfL -o "$zipfile" "$LAUNCHER_DOWNLOAD_URL"
+  unzip -q -d "$OPENDEX_DOCKER_HOME" "$zipfile"
+  rm "$zipfile"
+  unset zipfile
   chmod u+x "$DEFAULT_LAUNCHER"
 }
 
