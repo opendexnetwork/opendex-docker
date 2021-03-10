@@ -509,13 +509,6 @@ type LndSyncing struct {
 }
 
 func printSyncing(syncing chan LndSyncing) {
-	// ┌─────────┬─────────────────────────────────────────────────────┐
-	// │ SERVICE │ STATUS                                              │
-	// ├─────────┼─────────────────────────────────────────────────────┤
-	// │ lndbtc  │ Syncing 34.24% (610000/1781443)                     │
-	// ├─────────┼─────────────────────────────────────────────────────┤
-	// │ lndltc  │ Syncing 12.17% (191000/1568645)                     │
-	// └─────────┴─────────────────────────────────────────────────────┘
 	t := utils.SimpleTable{
 		Columns: []utils.TableColumn{
 			{
@@ -542,6 +535,8 @@ func printSyncing(syncing chan LndSyncing) {
 			},
 		},
 	}
+
+	fmt.Println()
 	fmt.Println("Syncing light clients:")
 
 	t.Print()
