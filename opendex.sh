@@ -57,7 +57,17 @@ install_launcher() {
   echo "$LAUNCHER_DOWNLOAD_URL"
   zipfile="$OPENDEX_DOCKER_HOME/opendex-launcher.zip"
   curl -sfL -o "$zipfile" "$LAUNCHER_DOWNLOAD_URL"
-  unzip -qo "$zipfile" -d "$OPENDEX_DOCKER_HOME"
+  case $(uname) in
+    Darwin)
+      unzip -qo "$zipfile" -d "$OPENDEX_DOCKER_HOME"
+      ;;
+    Linux)
+      gunzip -qc -S .zip "$zipfile" > "$OPENDEX_DOCKER_HOME/opendex-launcher"
+      ;;
+    *)
+      echo "Unsupported kernel: $(uname)"
+      exit 1
+  esac
   rm "$zipfile"
   unset zipfile
   chmod u+x "$DEFAULT_LAUNCHER"

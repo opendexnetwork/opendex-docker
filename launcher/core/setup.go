@@ -42,6 +42,8 @@ func (t *Launcher) Setup(ctx context.Context, pull bool, interactive bool) error
 	if interactive {
 		fmt.Printf("🚀 Launching %s environment\n", t.Network)
 		ctx = context.WithValue(ctx, "interactive", true)
+	} else {
+		ctx = context.WithValue(ctx, "interactive", false)
 	}
 	t.Logger.Debugf("Setup %s (%s)", t.Network, t.NetworkDir)
 
@@ -151,7 +153,7 @@ func (t *Launcher) upProxy(ctx context.Context) error {
 	})
 }
 
-func (t *Launcher) upLnd(ctx context.Context, name string) error {
+func (t *Launcher) upLnd(ctx context.Context, name string, syncing chan LndSyncing) error {
 	return t.upService(ctx, name, func(status string) bool {
 		if status == "Ready" {
 			return true
@@ -165,6 +167,14 @@ func (t *Launcher) upLnd(ctx context.Context, name string) error {
 		if strings.HasPrefix(status, "Wallet locked") {
 			return true
 		}
+
+		if strings.Contains(status, "Sync") {
+			syncing <- LndSyncing{
+				Name: name,
+				Status: status,
+			}
+		}
+
 		return false
 	})
 }
@@ -493,24 +503,82 @@ func (t *Launcher) attachToProxy(ctx context.Context) error {
 	}
 }
 
+type LndSyncing struct {
+	Name string
+	Status string
+}
+
+func printSyncing(syncing chan LndSyncing) {
+	// ┌─────────┬─────────────────────────────────────────────────────┐
+	// │ SERVICE │ STATUS                                              │
+	// ├─────────┼─────────────────────────────────────────────────────┤
+	// │ lndbtc  │ Syncing 34.24% (610000/1781443)                     │
+	// ├─────────┼─────────────────────────────────────────────────────┤
+	// │ lndltc  │ Syncing 12.17% (191000/1568645)                     │
+	// └─────────┴─────────────────────────────────────────────────────┘
+	t := utils.SimpleTable{
+		Columns: []utils.TableColumn{
+			{
+				ID: "service",
+				Display: "SERVICE",
+			},
+			{
+				ID: "status",
+				Display: "STATUS",
+			},
+		},
+		Records: []utils.TableRecord{
+			{
+				Fields: map[string]string{
+					"service": "lndbtc",
+					"status": "Syncing...",
+				},
+			},
+			{
+				Fields: map[string]string{
+					"service": "lndltc",
+					"status": "Syncing...",
+				},
+			},
+		},
+	}
+	fmt.Println("Syncing light clients:")
+
+	t.Print()
+
+	for e := range syncing {
+		t.PrintUpdate(utils.TableRecord{
+			Fields: map[string]string{
+				"service": e.Name,
+				"status": e.Status,
+			},
+		})
+	}
+}
+
 func (t *Launcher) upLayer2(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
+	syncing := make(chan LndSyncing)
+
 	g.Go(func() error {
-		return t.upLnd(ctx, "lndbtc")
+		return t.upLnd(ctx, "lndbtc", syncing)
 	})
 
 	g.Go(func() error {
-		return t.upLnd(ctx, "lndltc")
+		return t.upLnd(ctx, "lndltc", syncing)
 	})
 
 	g.Go(func() error {
 		return t.upConnext(ctx)
 	})
 
-	if err := g.Wait(); err != nil {
-		return err
+	interactive := ctx.Value("interactive").(bool)
+	if interactive {
+		go printSyncing(syncing)
 	}
 
-	return nil
+	defer close(syncing)
+
+	return g.Wait();
 }
