@@ -155,6 +155,11 @@ func (t *Launcher) upProxy(ctx context.Context) error {
 
 func (t *Launcher) upLnd(ctx context.Context, name string, syncing chan LndSyncing) error {
 	return t.upService(ctx, name, func(status string) bool {
+		syncing <- LndSyncing{
+			Name: name,
+			Status: status,
+		}
+
 		if status == "Ready" {
 			return true
 		}
@@ -166,13 +171,6 @@ func (t *Launcher) upLnd(ctx context.Context, name string, syncing chan LndSynci
 		}
 		if strings.HasPrefix(status, "Wallet locked") {
 			return true
-		}
-
-		if strings.Contains(status, "Sync") {
-			syncing <- LndSyncing{
-				Name: name,
-				Status: status,
-			}
 		}
 
 		return false

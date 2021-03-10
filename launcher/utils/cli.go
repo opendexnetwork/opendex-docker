@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultTableWidth = 68
+	DefaultTableWidth = 63
 )
 
 type SimpleTable struct {
@@ -24,16 +24,8 @@ type TableRecord struct {
 	Fields map[string]string
 }
 
-// Print the table like
-// ┌─────────┬─────────────────────────────────────────────────────┐
-// │ SERVICE │ STATUS                                              │
-// ├─────────┼─────────────────────────────────────────────────────┤
-// │ lndbtc  │ Syncing 34.24% (610000/1781443)                     │
-// ├─────────┼─────────────────────────────────────────────────────┤
-// │ lndltc  │ Syncing 12.17% (191000/1568645)                     │
-// └─────────┴─────────────────────────────────────────────────────┘
-func (t *SimpleTable) Print() {
-	for _, c := range t.Columns {
+func (t *SimpleTable) Layout() {
+	for i, c := range t.Columns {
 		max := 0
 		for _, r := range t.Records {
 			if len(r.Fields[c.ID]) > max {
@@ -43,7 +35,7 @@ func (t *SimpleTable) Print() {
 		if len(c.Display) > max {
 			max = len(c.Display)
 		}
-		c.Width = max
+		t.Columns[i].Width = max
 	}
 
 	n := len(t.Columns)
@@ -52,13 +44,27 @@ func (t *SimpleTable) Print() {
 	s := 0
 	for i, c := range t.Columns {
 		if i == n - 1 {
-			s = s + 1 // right border
+			s = s + 4 // left border, padding, right border
 			if DefaultTableWidth - s > c.Width {
-				c.Width = DefaultTableWidth - s
+				t.Columns[i].Width = DefaultTableWidth - s
 			}
 		}
 		s += c.Width + 3 // 2 padding, 1 left border
 	}
+}
+
+// Print the table like
+// ┌─────────┬─────────────────────────────────────────────────────┐
+// │ SERVICE │ STATUS                                              │
+// ├─────────┼─────────────────────────────────────────────────────┤
+// │ lndbtc  │ Syncing 34.24% (610000/1781443)                     │
+// ├─────────┼─────────────────────────────────────────────────────┤
+// │ lndltc  │ Syncing 12.17% (191000/1568645)                     │
+// └─────────┴─────────────────────────────────────────────────────┘
+func (t *SimpleTable) Print() {
+	t.Layout()
+
+	n := len(t.Columns)
 
 	// print tale top border
 	// ┌─────────┬─────────────────────────────────────────────────────┐
@@ -70,7 +76,7 @@ func (t *SimpleTable) Print() {
 		}
 		fmt.Print(strings.Repeat("─", c.Width + 2))
 		if i == n - 1 {
-			fmt.Print("┐")
+			fmt.Print("┐\n")
 		}
 	}
 
@@ -79,8 +85,9 @@ func (t *SimpleTable) Print() {
 	for i, c := range t.Columns {
 		fmt.Print("│ ")
 		fmt.Print(c.Display)
+		fmt.Print(strings.Repeat(" ", c.Width - len(c.Display) + 1))
 		if i == n - 1 {
-			fmt.Print("│")
+			fmt.Print("│\n")
 		}
 	}
 
@@ -96,14 +103,15 @@ func (t *SimpleTable) Print() {
 			}
 			fmt.Print(strings.Repeat("─", c.Width + 2))
 			if i == n - 1 {
-				fmt.Print("┤")
+				fmt.Print("┤\n")
 			}
 		}
 		for i, c := range t.Columns {
 			fmt.Print("│ ")
 			fmt.Print(r.Fields[c.ID])
+			fmt.Print(strings.Repeat(" ", c.Width - len(r.Fields[c.ID]) + 1))
 			if i == n - 1 {
-				fmt.Print("│")
+				fmt.Print("│\n")
 			}
 		}
 	}
@@ -118,11 +126,17 @@ func (t *SimpleTable) Print() {
 		}
 		fmt.Print(strings.Repeat("─", c.Width + 2))
 		if i == n - 1 {
-			fmt.Print("┘")
+			fmt.Print("┘\n")
 		}
 	}
 }
 
-func (t *SimpleTable) PrintUpdate(r TableRecord) {
-	fmt.Printf("%s\n", r.Fields)
+func (t *SimpleTable) PrintUpdate(x TableRecord) {
+	for i, r := range t.Records {
+		if r.Fields["service"] == x.Fields["service"] {
+			t.Records[i].Fields["status"] = x.Fields["status"]
+		}
+	}
+	fmt.Printf("\033[%dA", 2 * len(t.Records) + 3)
+	t.Print()
 }
