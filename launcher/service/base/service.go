@@ -81,27 +81,41 @@ func (t *Service) GetName() string {
 // Name   Command   State   Ports
 // ------------------------------
 //
+// Example 4.
+// Name             Command       State                 Ports
+// --------------------------------------------------------------------------------
+// testnet_opendexd_1   /entrypoint.sh   Up      0.0.0.0:49153->18885/tcp,
+//                                               18887/tcp, 28887/tcp, 8887/tcp
 func (t *Service) GetContainerName(ctx context.Context) string {
-	c := exec.Command("docker-compose", "ps", t.Name)
+	c := exec.Command("docker-compose", "ps", "-a", t.Name)
 	output, _ := utils.Output(ctx, c)
 
 	output = strings.TrimSpace(output)
 	lines := strings.Split(output, "\n")
 
 	n := len(lines)
+	defaultName := fmt.Sprintf("%s_%s_1", t.Context.GetNetwork(), t.Name)
 
-	if n == 2 {
-		// example 3
-		return ""
-	} else if n == 3 {
-		// example 1
-		return strings.Split(lines[2], " ")[0]
-	} else if n == 1 {
-		// example 2
-		// TODO parse error
-		return ""
+	if n == 0 {
+		return defaultName
+	} else if strings.HasPrefix("ERROR:", lines[0]) {
+		return defaultName
 	} else {
-		return ""
+		var j int
+		for i, line := range lines {
+			if strings.ReplaceAll(line, "-", "") == "" {
+				j = i
+				break
+			}
+		}
+		if j >= n {
+			return defaultName
+		} else {
+			if j + 1 >= n {
+				return defaultName
+			}
+			return strings.Split(lines[j+1], " ")[0]
+		}
 	}
 }
 
