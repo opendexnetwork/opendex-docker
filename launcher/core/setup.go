@@ -202,6 +202,15 @@ type ApiError struct {
 	Message string `json:"message"`
 }
 
+func (t *Launcher) createWallets(ctx context.Context) error {
+	interactive := ctx.Value("interactive").(bool)
+	if interactive {
+		return t.createWalletsByTty(ctx)
+	} else {
+		return t.createWalletsByProxy(ctx, DefaultWalletPassword)
+	}
+}
+
 func (t *Launcher) createWalletsByProxy(ctx context.Context, password string) error {
 	apiUrl, err := t.getProxyApiUrl()
 	if err != nil {
@@ -247,12 +256,12 @@ func (t *Launcher) createWalletsByTty(ctx context.Context) error {
 	return c.Run()
 }
 
-func (t *Launcher) createWallets(ctx context.Context) error {
+func (t *Launcher) unlockWallets(ctx context.Context, password string) error {
 	interactive := ctx.Value("interactive").(bool)
 	if interactive {
-		return t.createWalletsByTty(ctx)
+		return t.unlockWalletsByTty(ctx)
 	} else {
-		return t.createWalletsByProxy(ctx, DefaultWalletPassword)
+		return t.unlockWalletsByProxy(ctx, DefaultWalletPassword)
 	}
 }
 
@@ -299,15 +308,6 @@ func (t *Launcher) unlockWalletsByTty(ctx context.Context) error {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	return c.Run()
-}
-
-func (t *Launcher) unlockWallets(ctx context.Context, password string) error {
-	interactive := ctx.Value("interactive").(bool)
-	if interactive {
-		return t.unlockWalletsByTty(ctx)
-	} else {
-		return t.unlockWalletsByProxy(ctx, DefaultWalletPassword)
-	}
 }
 
 func (t *Launcher) upService(ctx context.Context, name string, checkFunc func(string) bool) error {
