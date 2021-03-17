@@ -169,6 +169,17 @@ func (t *Launcher) finalDown(ctx context.Context) error {
 }
 
 func (t *Launcher) Cleanup(ctx context.Context) error {
+	// Changing working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	defer os.Chdir(wd)
+
+	if err := os.Chdir(t.NetworkDir); err != nil {
+		return err
+	}
+
 	// stop all running services
 	if err := t.Stop(ctx); err != nil {
 		return fmt.Errorf("stop: %w", err)
