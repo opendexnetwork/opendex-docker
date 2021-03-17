@@ -11,16 +11,13 @@ type Service struct {
 	*Base
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	s, err := bitcoind.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := bitcoind.New(ctx, name)
 	s.ContainerDataDir = "/root/.litecoind"
 
 	return &Service{
 		Base: s,
-	}, nil
+	}
 }
 
 func (t *Service) Apply(cfg interface{}) error {

@@ -21,7 +21,7 @@ import (
 
 type Service struct {
 	Name    string
-	Context types.Context
+	Context types.ServiceContext
 
 	Hostname    string
 	Image       string
@@ -37,10 +37,10 @@ type Service struct {
 	Logger *logrus.Entry
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
+func New(ctx types.ServiceContext, name string) *Service {
 	client, err := docker.NewClientWithOpts(docker.FromEnv)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Docker client: %s", err)
+		panic(err)
 	}
 
 	return &Service{
@@ -57,7 +57,7 @@ func New(ctx types.Context, name string) (*Service, error) {
 		Volumes:     []string{},
 		Disabled:    false,
 		DataDir:     "",
-	}, nil
+	}
 }
 
 func (t *Service) GetName() string {
@@ -127,8 +127,19 @@ func (t *Service) GetStatus(ctx context.Context) (string, error) {
 	return fmt.Sprintf("Container %s", c.State.Status), nil
 }
 
+func (t *Service) Create(ctx context.Context) error {
+	c := exec.Command("docker-compose", "up", "-d", "--no-start", t.Name)
+	return utils.Run(ctx, c)
+}
+
+func (t *Service) Up(ctx context.Context) error {
+	c := exec.Command("docker-compose", "up", "-d", t.Name)
+	return utils.Run(ctx, c)
+}
+
 func (t *Service) Start(ctx context.Context) error {
-	c := exec.Command("docker-compose", "start", t.Name)
+	//c := exec.Command("docker-compose", "start", t.Name)
+	c := exec.Command("docker-compose", "up", "-d", t.Name)
 	return utils.Run(ctx, c)
 }
 
@@ -142,15 +153,7 @@ func (t *Service) Restart(ctx context.Context) error {
 	return utils.Run(ctx, c)
 }
 
-func (t *Service) Create(ctx context.Context) error {
-	c := exec.Command("docker-compose", "up", "-d", "--no-start", t.Name)
-	return utils.Run(ctx, c)
-}
 
-func (t *Service) Up(ctx context.Context) error {
-	c := exec.Command("docker-compose", "up", "-d", t.Name)
-	return utils.Run(ctx, c)
-}
 
 func (t *Service) demuxLogsReader(reader io.Reader) io.Reader {
 	r, w := io.Pipe()

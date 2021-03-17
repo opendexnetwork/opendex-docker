@@ -33,3 +33,12 @@ type Service interface {
 
 	Rescue(ctx context.Context) bool
 }
+
+type ServiceContext interface {
+	GetService(name string) Service
+	GetNetwork() Network
+	GetNetworkDir() string
+	GetExternalIp() string
+	GetBackupDir() string
+	GetDataDir() string
+}

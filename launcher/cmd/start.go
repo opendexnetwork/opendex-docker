@@ -17,6 +17,7 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := newContext()
 		defer cancel()
-		return launcher.Start(ctx)
+		// FIXME enable start multiple services
+		return launcher.Start(ctx, args[1])
 	},
 }

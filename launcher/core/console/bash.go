@@ -84,12 +84,16 @@ Boltzcli shortcut commands
   <amount> <address>                        withdraw from boltz channel
 `
 
-func writeInitScript(network string, f *os.File) {
+func writeInitScript(network string, launcherExecutable string, f *os.File) {
 	f.WriteString(`\
-export NETWORK=` + network + `
+export NETWORK='` + network + `'
+export OPENDEX_LAUNCHER='` + launcherExecutable + `'
 export PS1="$NETWORK > "
 function help() {
 	echo "` + help + `"
+}
+function status() {
+	"$OPENDEX_LAUNCHER" status
 }
 function start() {
 	docker start ${NETWORK}_${1}_1 
@@ -179,7 +183,7 @@ alias walletwithdraw='opendex-cli walletwithdraw'
 `)
 }
 
-func startBash() error {
+func startBash(launcherExecutable string) error {
 	network := os.Getenv("NETWORK")
 	f, err := os.CreateTemp(os.TempDir(), "init.*.bash")
 	if err != nil {
@@ -187,7 +191,7 @@ func startBash() error {
 		return nil
 	}
 	defer f.Close()
-	writeInitScript(network, f)
+	writeInitScript(network, launcherExecutable, f)
 	c := exec.Command("bash", "--init-file", f.Name())
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout

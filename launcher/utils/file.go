@@ -1,6 +1,9 @@
 package utils
 
-import "os"
+import (
+	"github.com/mattn/go-isatty"
+	"os"
+)
 
 func FileExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -15,4 +18,13 @@ func IsDir(path string) bool {
 		panic(err)
 	}
 	return info.IsDir()
+}
+
+// Isatty checks if a given file is a terminal or not
+func Isatty(f *os.File) bool {
+	if isatty.IsTerminal(f.Fd()) {
+		return true
+	} else {
+		return false
+	}
 }

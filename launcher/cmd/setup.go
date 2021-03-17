@@ -23,13 +23,11 @@ func init() {
 var setupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "Set up OpenDEX environment",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return launcher.Apply()
-	},
+	PreRunE: CommonPreRunE,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := newContext()
 		defer cancel()
 		ctx = context.WithValue(ctx, "rescue", false)
-		return launcher.Setup(ctx, !setupOpts.NoPull, setupOpts.Interactive)
+		return launcher.Setup(ctx, !setupOpts.NoPull)
 	},
 }

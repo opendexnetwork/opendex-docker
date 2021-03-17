@@ -39,15 +39,12 @@ type Service struct {
 	RpcParams RpcParams
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := base.New(ctx, name)
 
 	return &Service{
 		Base: s,
-	}, nil
+	}
 }
 
 func (t *Service) Apply(cfg interface{}) error {

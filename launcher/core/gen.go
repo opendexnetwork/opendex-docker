@@ -12,8 +12,8 @@ func (t *Launcher) exportDockerComposeYaml() (string, error) {
 	var b strings.Builder
 	b.WriteString("version: \"2.4\"\n")
 	b.WriteString("services:\n")
-	for _, name := range t.ServicesOrder {
-		s := t.Services[name]
+	for _, name := range t.Services.Keys() {
+		s := t.Services.Get(name)
 		if s.IsDisabled() {
 			continue
 		}
@@ -108,11 +108,11 @@ func (t *Launcher) exportConfigJson() (string, error) {
 		Services:  []ServiceConfig{},
 	}
 
-	for _, name := range t.ServicesOrder {
+	for _, name := range t.Services.Keys() {
 		if name == "proxy" {
 			continue
 		}
-		s := t.Services[name]
+		s := t.Services.Get(name)
 		rpc, err := s.GetRpcParams()
 		if err != nil {
 			return "", err

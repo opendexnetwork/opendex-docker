@@ -35,16 +35,13 @@ type Service struct {
 	Chain Chain
 }
 
-func New(ctx types.Context, name string, chain Chain) (*Service, error) {
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string, chain Chain) *Service {
+	s := base.New(ctx, name)
 
 	return &Service{
 		Base:  s,
 		Chain: chain,
-	}, nil
+	}
 }
 
 type Info struct {
@@ -179,18 +176,12 @@ func (t *Service) UseNeutrino() bool {
 	}
 	switch t.Chain {
 	case Bitcoin:
-		s, err := t.Context.GetService("bitcoind")
-		if err != nil {
-			panic(err)
-		}
+		s := t.Context.GetService("bitcoind")
 		if s.GetMode() == "neutrino" || s.GetMode() == "light" {
 			return true
 		}
 	case Litecoin:
-		s, err := t.Context.GetService("litecoind")
-		if err != nil {
-			panic(err)
-		}
+		s := t.Context.GetService("litecoind")
 		if s.GetMode() == "neutrino" || s.GetMode() == "light" {
 			return true
 		}
@@ -309,10 +300,7 @@ func (t *Service) Apply(cfg interface{}) error {
 	} else {
 		switch t.Chain {
 		case Bitcoin:
-			s, err := t.Context.GetService("bitcoind")
-			if err != nil {
-				return err
-			}
+			s := t.Context.GetService("bitcoind")
 			mode := s.(*bitcoind.Service).Mode
 			if mode == bitcoind.External {
 				params, err := s.GetRpcParams()
@@ -330,10 +318,7 @@ func (t *Service) Apply(cfg interface{}) error {
 				t.Environment["NEUTRINO"] = "True"
 			}
 		case Litecoin:
-			s, err := t.Context.GetService("litecoind")
-			if err != nil {
-				return err
-			}
+			s := t.Context.GetService("litecoind")
 			mode := s.(*litecoind.Service).Mode
 			if mode == bitcoind.External {
 				params, err := s.GetRpcParams()

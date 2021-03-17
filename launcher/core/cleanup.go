@@ -18,10 +18,7 @@ import (
 
 func (t *Launcher) stopService(ctx context.Context, name string) error {
 	t.Logger.Debugf("Stopping %s", name)
-	s, err := t.GetService(name)
-	if err != nil {
-		return err
-	}
+	s := t.GetService(name)
 	if err := s.Stop(ctx); err != nil {
 		if strings.Contains(err.Error(), "No such container") {
 			t.Logger.Debugf("Service %s stopped already", name)
@@ -50,19 +47,7 @@ func (t *Launcher) stopService(ctx context.Context, name string) error {
 	return nil
 }
 
-func (t *Launcher) Create(ctx context.Context) error {
-	return nil
-}
-
-func (t *Launcher) Start(ctx context.Context) error {
-	return nil
-}
-
-func (t *Launcher) Restart(ctx context.Context) error {
-	return nil
-}
-
-func (t *Launcher) Stop(ctx context.Context) error {
+func (t *Launcher) Stop(ctx context.Context, services ...string) error {
 	if t.Network != types.Simnet {
 		if err := t.stopService(ctx, "boltz"); err != nil {
 			return err
@@ -145,7 +130,8 @@ func (t *Launcher) finalDown(ctx context.Context) error {
 		return fmt.Errorf("create docker client: %w", err)
 	}
 
-	for _, service := range t.ServicesOrder {
+	for _, name := range t.Services.Keys() {
+		service := t.Services.Get(name)
 		containerName := fmt.Sprintf("%s_%s_1", t.Network, service)
 		_, err := client.ContainerInspect(ctx, containerName)
 		if err != nil {

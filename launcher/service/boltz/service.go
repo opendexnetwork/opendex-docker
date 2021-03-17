@@ -3,7 +3,6 @@ package boltz
 import (
 	"context"
 	"fmt"
-	"github.com/opendexnetwork/opendex-docker/launcher/service"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/base"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
 )
@@ -14,19 +13,12 @@ type Service struct {
 	*Base
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	if ctx.GetNetwork() == types.Simnet {
-		return nil, service.ErrForbiddenService
-	}
-
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := base.New(ctx, name)
 
 	return &Service{
 		Base: s,
-	}, nil
+	}
 }
 
 type Info struct {
@@ -82,15 +74,8 @@ func (t *Service) Apply(cfg interface{}) error {
 		return err
 	}
 	var lndbtc, lndltc types.Service
-	var err error
-	lndbtc, err = t.Context.GetService("lndbtc")
-	if err != nil {
-		return err
-	}
-	lndltc, err = t.Context.GetService("lndltc")
-	if err != nil {
-		return err
-	}
+	lndbtc = t.Context.GetService("lndbtc")
+	lndltc = t.Context.GetService("lndltc")
 
 	t.Volumes = append(t.Volumes,
 		fmt.Sprintf("%s:/root/.boltz", t.DataDir),

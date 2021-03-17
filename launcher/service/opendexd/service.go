@@ -8,9 +8,12 @@ import (
 	"github.com/opendexnetwork/opendex-docker/launcher/service"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/base"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
+	"github.com/opendexnetwork/opendex-docker/launcher/utils"
+	"golang.org/x/sync/errgroup"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Base = base.Service
@@ -20,16 +23,13 @@ type Service struct {
 	RpcParams RpcParams
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := base.New(ctx, name)
 
 	return &Service{
 		Base:      s,
 		RpcParams: RpcParams{},
-	}, nil
+	}
 }
 
 type LndInfo struct {
@@ -152,15 +152,9 @@ func (t *Service) Apply(cfg interface{}) error {
 		t.Environment["PRESERVE_CONFIG"] = "false"
 	}
 
-	lndbtc, err := t.Context.GetService("lndbtc")
-	if err != nil {
-		return err
-	}
+	lndbtc := t.Context.GetService("lndbtc")
 
-	lndltc, err := t.Context.GetService("lndltc")
-	if err != nil {
-		return err
-	}
+	lndltc := t.Context.GetService("lndltc")
 
 	t.Volumes = append(t.Volumes, fmt.Sprintf("%s:/root/.opendex", t.DataDir))
 	t.Volumes = append(t.Volumes, fmt.Sprintf("%s:/root/.lndbtc", lndbtc.GetDataDir()))
@@ -201,4 +195,218 @@ type RpcParams struct {
 
 func (t *Service) GetRpcParams() (interface{}, error) {
 	return t.RpcParams, nil
+}
+
+type LndSyncing struct {
+	Name string
+	Status string
+}
+
+func printSyncing(syncing chan LndSyncing) {
+	t := utils.SimpleTable{
+		Columns: []utils.TableColumn{
+			{
+				ID: "service",
+				Display: "SERVICE",
+			},
+			{
+				ID: "status",
+				Display: "STATUS",
+			},
+		},
+		Records: []utils.TableRecord{
+			{
+				Fields: map[string]string{
+					"service": "lndbtc",
+					"status": "Syncing...",
+				},
+			},
+			{
+				Fields: map[string]string{
+					"service": "lndltc",
+					"status": "Syncing...",
+				},
+			},
+		},
+	}
+
+	fmt.Println()
+	fmt.Println("Syncing light clients:")
+
+	t.Print()
+
+	for e := range syncing {
+		t.PrintUpdate(utils.TableRecord{
+			Fields: map[string]string{
+				"service": e.Name,
+				"status": e.Status,
+			},
+		})
+	}
+}
+
+func (t *Service) upLnd(ctx context.Context, name string, syncing chan LndSyncing) error {
+	return t.upService(ctx, name, func(status string) bool {
+		syncing <- LndSyncing{
+			Name: name,
+			Status: status,
+		}
+
+		if status == "Ready" {
+			return true
+		}
+		if strings.HasPrefix(status, "Syncing 100.00%") {
+			return true
+		}
+		if strings.HasPrefix(status, "Syncing 99.99%") {
+			return true
+		}
+		if strings.HasPrefix(status, "Wallet locked") {
+			return true
+		}
+
+		return false
+	})
+}
+
+func (t *Service) upConnext(ctx context.Context) error {
+	return t.upService(ctx, "connext", func(status string) bool {
+		if status == "Ready" {
+			return true
+		}
+		return false
+	})
+}
+
+func (t *Service) upService(ctx context.Context, name string, checkFunc func(string) bool) error {
+	s := t.Context.GetService(name)
+	if s.IsDisabled() {
+		// if the service is running then we will stop it and remove the container
+		if s.IsRunning() {
+			if err := s.Stop(ctx); err != nil {
+				return err
+			}
+			if err := s.Remove(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := s.Up(ctx); err != nil {
+		return fmt.Errorf("up: %s", err)
+	}
+	i := 0
+	tty := utils.Isatty(os.Stdin)
+	for {
+		if i > 0 && i % 10 == 0 {
+			if tty {
+				fmt.Printf("Still waiting for %s to be ready...\n", t.Name)
+			}
+		}
+
+		status, err := s.GetStatus(ctx)
+		if err != nil {
+			return err
+		}
+
+		t.Logger.Debugf("[status] %s: %s", name, status)
+		i++
+
+		if status == "Container missing" || status == "Container exited" {
+			return fmt.Errorf("%s: %s", name, status)
+		}
+
+		if checkFunc(status) {
+			break
+		}
+
+		select {
+		case <-ctx.Done(): // context cancelled
+			return errors.New("interrupted")
+		case <-time.After(3 * time.Second): // retry
+		}
+	}
+
+	return nil
+}
+
+func (t *Service) upDeps(ctx context.Context) error {
+	g, ctx := errgroup.WithContext(ctx)
+
+	syncing := make(chan LndSyncing)
+
+	g.Go(func() error {
+		return t.upLnd(ctx, "lndbtc", syncing)
+	})
+
+	g.Go(func() error {
+		return t.upLnd(ctx, "lndltc", syncing)
+	})
+
+	g.Go(func() error {
+		return t.upConnext(ctx)
+	})
+
+	interactive := ctx.Value("interactive").(bool)
+	if interactive {
+		go printSyncing(syncing)
+	}
+
+	defer close(syncing)
+
+	return g.Wait()
+}
+
+func (t *Service) Start(ctx context.Context) error {
+	// make sure layer 2 services (lndbtc, lndltc, and connext) is ready
+
+	if err := t.upDeps(ctx); err != nil {
+		return err
+	}
+
+	tty := utils.Isatty(os.Stdin)
+
+	if err := t.SetupBackup(ctx); err != nil {
+		return err
+	}
+
+	if err := t.Base.Start(ctx); err != nil {
+		return err
+	}
+
+	i := 0
+	for {
+		if i > 0 && i % 10 == 0 {
+			if tty {
+				fmt.Printf("Still waiting for %s to be ready...\n", t.Name)
+			}
+		}
+		status, err := t.GetStatus(ctx)
+		if err != nil {
+			return err
+		}
+		if status == "Container missing" || status == "Container exited" {
+			return fmt.Errorf("%s: %s", t.Name, status)
+		} else if status == "Ready" {
+			break
+		} else if status == "Waiting for channels" {
+			break
+		} else if strings.HasPrefix(status, "Wallet missing") {
+			break
+		} else if strings.HasPrefix(status, "Wallet locked") {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return errors.New("interrupted")
+		case <-time.After(3 * time.Second):
+		}
+		i++
+	}
+
+	if err := t.SetupWallet(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

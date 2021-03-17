@@ -2,7 +2,6 @@ package bitcoind
 
 import (
 	"fmt"
-	"github.com/opendexnetwork/opendex-docker/launcher/service"
 	"github.com/opendexnetwork/opendex-docker/launcher/service/base"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
 )
@@ -26,21 +25,14 @@ type RpcParams struct {
 	Zmqpubrawtx    string `json:"zmqpubrawtx"`
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	if ctx.GetNetwork() == types.Simnet {
-		return nil, service.ErrForbiddenService
-	}
-
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := base.New(ctx, name)
 
 	return &Service{
 		Base:             s,
 		ContainerDataDir: "/root/.bitcoind",
 		RpcParams: RpcParams{},
-	}, nil
+	}
 }
 
 func (t *Service) Apply(cfg interface{}) error {

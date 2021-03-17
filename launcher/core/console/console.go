@@ -31,13 +31,13 @@ func init() {
 	}
 }
 
-func (t *Console) Start() error {
+func (t *Console) Start(launcherExecutable string) error {
 	if t.ShowBanner {
 		fmt.Println(t.Banner)
 	}
 	if runtime.GOOS == "windows" {
 		return startPowershell()
 	} else {
-		return startBash()
+		return startBash(launcherExecutable)
 	}
 }
