@@ -105,7 +105,7 @@ function restart() {
 	docker restart ${NETWORK}_${1}_1
 }
 function down() {
-	echo "Not implemented yet!"
+	"$OPENDEX_LAUNCHER" down
 }
 function logs() {
 	docker logs --tail=100 ${NETWORK}_${1}_1
