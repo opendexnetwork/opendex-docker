@@ -122,6 +122,9 @@ func (t *Service) GetContainerName(ctx context.Context) string {
 func (t *Service) GetStatus(ctx context.Context) (string, error) {
 	c, err := t.getContainer(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "No such container") {
+			return "Container missing", nil
+		}
 		return "", err
 	}
 	return fmt.Sprintf("Container %s", c.State.Status), nil
