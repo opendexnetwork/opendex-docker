@@ -300,7 +300,7 @@ func (t *Service) upService(ctx context.Context, name string, checkFunc func(str
 	for {
 		if i > 0 && i % 10 == 0 {
 			if tty {
-				fmt.Printf("Still waiting for %s to be ready...\n", t.Name)
+				//fmt.Printf("Still waiting for %s to be ready...\n", t.Name)
 			}
 		}
 
