@@ -105,6 +105,9 @@ func (t *Service) GetStatus(ctx context.Context) (string, error) {
 			} else if strings.Contains(err.Output, "is opendexd running?") {
 				// could not connect to opendexd at localhost:18886, is opendexd running?
 				return "Starting...", nil
+			} else if strings.Contains(err.Output, "No connection established") {
+				// Error: 14 UNAVAILABLE: No connection established
+				return "Starting...", nil
 			}
 		}
 		return "", fmt.Errorf("get info: %w", err)
