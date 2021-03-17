@@ -77,9 +77,7 @@ func (t *Service) SetupWallet(ctx context.Context) error {
 	if t.HasWallet() {
 		if t.IsWalletLocked() {
 			if tty {
-				if err := t.UnlockWallet(ctx, ""); err != nil {
-					return err
-				}
+				t.UnlockWallet(ctx, "")
 			} else {
 				if err := t.UnlockWallet(ctx, DefaultWalletPassword); err != nil {
 					return err
