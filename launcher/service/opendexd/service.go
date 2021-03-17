@@ -366,6 +366,10 @@ func (t *Service) Start(ctx context.Context) error {
 
 	tty := utils.Isatty(os.Stdin)
 
+	if tty {
+		fmt.Println("🕹️ Loading OpenDEX console ...")
+	}
+
 	if err := t.SetupBackup(ctx); err != nil {
 		return err
 	}
