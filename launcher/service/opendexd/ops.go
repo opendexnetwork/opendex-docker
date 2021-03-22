@@ -95,6 +95,7 @@ func (t *Service) SetupWallet(ctx context.Context) error {
 				if _, err := fmt.Scanf("%s", &choice); err != nil {
 					return err
 				}
+				choice = strings.TrimSpace(choice)
 				switch choice {
 				case "1":
 					if err := t.CreateWallet(ctx, ""); err != nil {
