@@ -92,7 +92,7 @@ func (t *Service) SetupWallet(ctx context.Context) error {
 				fmt.Println("2) Restore Existing")
 				fmt.Print("Please choose: ")
 				var choice string
-				if _, err := fmt.Scanf("%s", choice); err != nil {
+				if _, err := fmt.Scanf("%s", &choice); err != nil {
 					return err
 				}
 				switch choice {
