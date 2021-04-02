@@ -17,7 +17,7 @@ func (t *Launcher) BackupTo(ctx context.Context, location string) error {
 	if err := t.Gen(ctx); err != nil {
 		return err
 	}
-	if err := t.upOpendexd(ctx); err != nil {
+	if err := t.Opendexd.Start(ctx); err != nil {
 		return err
 	}
 	return nil

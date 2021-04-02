@@ -14,7 +14,7 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:           "launcher",
-		Short:         fmt.Sprintf("XUD environment launcher"),
+		Short:         fmt.Sprintf("OpenDEX environment launcher"),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -22,12 +22,13 @@ var (
 )
 
 func init() {
+	var err error
+
 	if err := os.Setenv("DOCKER_API_VERSION", "1.40"); err != nil {
 		panic(err)
 	}
-	var err error
-	launcher, err = core.NewLauncher()
-	if err != nil {
+	launcher = core.NewLauncher()
+	if err := launcher.Init(); err != nil {
 		panic(err)
 	}
 	err = launcher.AddServiceFlags(rootCmd)
@@ -68,4 +69,8 @@ func newContext() (context.Context, func()) {
 	}()
 
 	return ctx, _cancel
+}
+
+func CommonPreRunE(cmd *cobra.Command, args []string) error {
+	return launcher.Apply()
 }

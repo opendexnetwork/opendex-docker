@@ -7,6 +7,7 @@ import (
 
 type SetupOptions struct {
 	NoPull bool
+	Interactive bool
 }
 
 var (
@@ -15,15 +16,14 @@ var (
 
 func init() {
 	setupCmd.PersistentFlags().BoolVar(&setupOpts.NoPull, "nopull", false, "don't pull images")
+	setupCmd.PersistentFlags().BoolVarP(&setupOpts.Interactive, "interactive", "i", false, "interactive setup")
 	rootCmd.AddCommand(setupCmd)
 }
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "Set up OpenDEX environment",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return launcher.Apply()
-	},
+	PreRunE: CommonPreRunE,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := newContext()
 		defer cancel()

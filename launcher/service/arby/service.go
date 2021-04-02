@@ -17,22 +17,16 @@ type Service struct {
 	*Base
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := base.New(ctx, name)
 
 	return &Service{
 		Base: s,
-	}, nil
+	}
 }
 
 func (t *Service) getOpendexd() (*Opendexd, error) {
-	s, err := t.Context.GetService("opendexd")
-	if err != nil {
-		return nil, err
-	}
+	s := t.Context.GetService("opendexd")
 	sOpendexd, ok := s.(*Opendexd)
 	if !ok {
 		return nil, errors.New("cannot convert to *ond.Service")

@@ -6,6 +6,7 @@ import (
 	"github.com/opendexnetwork/opendex-docker/launcher/service/base"
 	"github.com/opendexnetwork/opendex-docker/launcher/types"
 	"net"
+	"net/http"
 	"runtime"
 	"time"
 )
@@ -15,13 +16,11 @@ type Base = base.Service
 type Service struct {
 	*Base
 	RpcParams RpcParams
+	ApiClient *ApiClient
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
-	s, err := base.New(ctx, name)
-	if err != nil {
-		return nil, err
-	}
+func New(ctx types.ServiceContext, name string) *Service {
+	s := base.New(ctx, name)
 
 	var port uint16
 	switch ctx.GetNetwork() {
@@ -33,13 +32,24 @@ func New(ctx types.Context, name string) (*Service, error) {
 		port = 8889
 	}
 
-	return &Service{
+	t := &Service{
 		Base: s,
 		RpcParams: RpcParams{
 			Type: "HTTP",
 			Port: port,
 		},
-	}, nil
+		ApiClient: &ApiClient{
+			RestClient: &RestClient{
+				HttpClient: http.DefaultClient,
+			},
+		},
+	}
+
+	t.ApiClient.AssembleUrl = func(endpoint string) string {
+		return fmt.Sprintf("%s/api%s", t.RpcParams.ToUri(), endpoint)
+	}
+
+	return t
 }
 
 func (t *Service) checkApiPort() error {

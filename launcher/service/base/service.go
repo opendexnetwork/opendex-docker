@@ -21,7 +21,7 @@ import (
 
 type Service struct {
 	Name    string
-	Context types.Context
+	Context types.ServiceContext
 
 	Hostname    string
 	Image       string
@@ -37,10 +37,10 @@ type Service struct {
 	Logger *logrus.Entry
 }
 
-func New(ctx types.Context, name string) (*Service, error) {
+func New(ctx types.ServiceContext, name string) *Service {
 	client, err := docker.NewClientWithOpts(docker.FromEnv)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Docker client: %s", err)
+		panic(err)
 	}
 
 	return &Service{
@@ -57,7 +57,7 @@ func New(ctx types.Context, name string) (*Service, error) {
 		Volumes:     []string{},
 		Disabled:    false,
 		DataDir:     "",
-	}, nil
+	}
 }
 
 func (t *Service) GetName() string {
@@ -81,40 +81,68 @@ func (t *Service) GetName() string {
 // Name   Command   State   Ports
 // ------------------------------
 //
+// Example 4.
+// Name             Command       State                 Ports
+// --------------------------------------------------------------------------------
+// testnet_opendexd_1   /entrypoint.sh   Up      0.0.0.0:49153->18885/tcp,
+//                                               18887/tcp, 28887/tcp, 8887/tcp
 func (t *Service) GetContainerName(ctx context.Context) string {
-	c := exec.Command("docker-compose", "ps", t.Name)
+	c := exec.Command("docker-compose", "ps", "-a", t.Name)
 	output, _ := utils.Output(ctx, c)
 
 	output = strings.TrimSpace(output)
 	lines := strings.Split(output, "\n")
 
 	n := len(lines)
+	defaultName := fmt.Sprintf("%s_%s_1", t.Context.GetNetwork(), t.Name)
 
-	if n == 2 {
-		// example 3
-		return ""
-	} else if n == 3 {
-		// example 1
-		return strings.Split(lines[2], " ")[0]
-	} else if n == 1 {
-		// example 2
-		// TODO parse error
-		return ""
+	if n == 0 {
+		return defaultName
+	} else if strings.HasPrefix("ERROR:", lines[0]) {
+		return defaultName
 	} else {
-		return ""
+		var j int
+		for i, line := range lines {
+			if strings.ReplaceAll(line, "-", "") == "" {
+				j = i
+				break
+			}
+		}
+		if j >= n {
+			return defaultName
+		} else {
+			if j + 1 >= n {
+				return defaultName
+			}
+			return strings.Split(lines[j+1], " ")[0]
+		}
 	}
 }
 
 func (t *Service) GetStatus(ctx context.Context) (string, error) {
 	c, err := t.getContainer(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "No such container") {
+			return "Container missing", nil
+		}
 		return "", err
 	}
 	return fmt.Sprintf("Container %s", c.State.Status), nil
 }
 
+func (t *Service) Create(ctx context.Context) error {
+	c := exec.Command("docker-compose", "up", "-d", "--no-start", t.Name)
+	return utils.Run(ctx, c)
+}
+
+func (t *Service) Up(ctx context.Context) error {
+	c := exec.Command("docker-compose", "up", "-d", t.Name)
+	return utils.Run(ctx, c)
+}
+
 func (t *Service) Start(ctx context.Context) error {
-	c := exec.Command("docker-compose", "start", t.Name)
+	//c := exec.Command("docker-compose", "start", t.Name)
+	c := exec.Command("docker-compose", "up", "-d", t.Name)
 	return utils.Run(ctx, c)
 }
 
@@ -128,15 +156,7 @@ func (t *Service) Restart(ctx context.Context) error {
 	return utils.Run(ctx, c)
 }
 
-func (t *Service) Create(ctx context.Context) error {
-	c := exec.Command("docker-compose", "up", "-d", "--no-start", t.Name)
-	return utils.Run(ctx, c)
-}
 
-func (t *Service) Up(ctx context.Context) error {
-	c := exec.Command("docker-compose", "up", "-d", t.Name)
-	return utils.Run(ctx, c)
-}
 
 func (t *Service) demuxLogsReader(reader io.Reader) io.Reader {
 	r, w := io.Pipe()
