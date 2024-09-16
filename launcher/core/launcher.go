@@ -59,6 +59,8 @@ type Launcher struct {
 	rootLogger *logrus.Logger
 
 	LogFile *os.File
+
+	ShowUpdateDetails bool
 }
 
 func defaultHomeDir() (string, error) {
@@ -244,6 +246,7 @@ func NewLauncher() (*Launcher, error) {
 			},
 		},
 		LogFile: f,
+		ShowUpdateDetails: true,
 	}
 
 	l.Services, l.ServicesOrder, err = initServices(&l, network)
